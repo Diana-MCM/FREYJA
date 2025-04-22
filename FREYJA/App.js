@@ -48,21 +48,21 @@ export default function App() {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* {screen === 'Inicio' && (
+      {screen === 'Inicio' && (
         <PantallaInicio 
           setScreen={setScreen} 
           nombreUsuario={nombreUsuario}
           listaMedicamentos={listaMedicamentos}
           onShowMedicamentos={() => setShowMedicamentos(true)}
         />
-      )} */}
+      )}
       {screen === 'IniciarSesion' && (
         <IniciarSesion 
           setScreen={setScreen} 
           setNombreUsuario={setNombreUsuario} 
         />
       )}
-      {/* {screen === 'RegistroDeUsuario' && (
+      {screen === 'RegistroDeUsuario' && (
         <RegistroDeUsuario 
           setScreen={setScreen} 
           setNombreUsuario={setNombreUsuario} 
@@ -79,7 +79,8 @@ export default function App() {
           setScreen={setScreen} 
           nombreUsuario={nombreUsuario} 
         />
-      )} */}
+      )}
+      
     </View>
   );
 }
