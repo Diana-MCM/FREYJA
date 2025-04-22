@@ -12,7 +12,7 @@ const RegistroDeUsuario = ({ setScreen, setNombreUsuario }) => {
 
   const handleRegister = async () => {
     if (!nombre || !email || !password) {
-      Alert.alert("Error", "Todos los campos son obligatorios");
+      Alert.alert("Error", "Todoss los campos son obligatorios");
       return;
     }
 
