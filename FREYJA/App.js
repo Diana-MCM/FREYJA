@@ -20,45 +20,21 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
   };
 
   return (
-    <View style={{ 
-      flex: 1, 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      backgroundColor: '#7E57C2'
-    }}>
-      <Text style={{ fontSize: 30, fontWeight: 'bold', marginBottom: 10 }}>BIENVENIDO A FREYJA</Text>
-      <Text style={{ fontSize: 15, marginBottom: 10, fontFamily: 'Courier New', textAlign: 'center' }}>
-        Si ya cuenta con una cuenta, por favor inicie sesión.
-      </Text>
-      <Text style={{ fontSize: 15, marginBottom: 10, fontFamily: 'Courier New', textAlign: 'center' }}>
-        En caso de que no, por favor regístrese para entrar.
-      </Text>
-      <TextInput
-        placeholder="Correo"
-        value={email}
-        onChangeText={setEmail}
-        style={{ 
-          borderWidth: 1, 
-          marginBottom: 10, 
-          width: 200, 
-          padding: 5, 
-          backgroundColor: 'white' 
-        }}
+    <View style={{ flex: 1, justifyContent: 'center', padding: 20 }}>
+      <TextInput 
+        placeholder="Correo" 
+        value={email} 
+        onChangeText={setEmail} 
+        style={{ borderWidth: 1, marginBottom: 10, padding: 10 }} 
       />
-      <TextInput
-        placeholder="Contraseña"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        style={{ 
-          borderWidth: 1, 
-          marginBottom: 10, 
-          width: 200, 
-          padding: 5, 
-          backgroundColor: 'white' 
-        }}
+      <TextInput 
+        placeholder="Contraseña" 
+        value={password} 
+        onChangeText={setPassword} 
+        secureTextEntry 
+        style={{ borderWidth: 1, marginBottom: 10, padding: 10 }} 
       />
-      <Button title="Entrar" onPress={handleLogin}/>
+      <Button title="Iniciar Sesión" onPress={handleLogin} />
       <Button title="Registrarse" onPress={() => setScreen('RegistroDeUsuario')} />
     </View>
   );
@@ -67,26 +43,26 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
 export default function App() {
   const [screen, setScreen] = useState('IniciarSesion');
   const [nombreUsuario, setNombreUsuario] = useState('');
-  const [showMedicamentos, setShowMedicamentos] = useState(false);
-  const [listaMedicamentos, setListaMedicamentos] = useState([]);
+  //const [showMedicamentos, setShowMedicamentos] = useState(false);
+  //const [listaMedicamentos, setListaMedicamentos] = useState([]);
 
   return (
     <View style={{ flex: 1 }}>
-      {screen === 'Inicio' && (
+      {/* {screen === 'Inicio' && (
         <PantallaInicio 
           setScreen={setScreen} 
           nombreUsuario={nombreUsuario}
           listaMedicamentos={listaMedicamentos}
           onShowMedicamentos={() => setShowMedicamentos(true)}
         />
-      )}
+      )} */}
       {screen === 'IniciarSesion' && (
         <IniciarSesion 
           setScreen={setScreen} 
           setNombreUsuario={setNombreUsuario} 
         />
       )}
-      {screen === 'RegistroDeUsuario' && (
+      {/* {screen === 'RegistroDeUsuario' && (
         <RegistroDeUsuario 
           setScreen={setScreen} 
           setNombreUsuario={setNombreUsuario} 
@@ -103,8 +79,7 @@ export default function App() {
           setScreen={setScreen} 
           nombreUsuario={nombreUsuario} 
         />
-      )}
-      
+      )} */}
     </View>
   );
 }
