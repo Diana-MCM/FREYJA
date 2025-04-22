@@ -1,42 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, Alert, ImageBackground, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Button, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import GestionMedicamentos from './GestionMedicamentos';
-import imagenFondo from './imagenes/fondo.png';
+//import GestionMedicamentos from './GestionMedicamentos';
 
 const PantallaInicio = ({ setScreen, nombreUsuario }) => {
-  const [showMedicamentos, setShowMedicamentos] = useState(false);
-  const [listaMedicamentos, setListaMedicamentos] = useState([]);
+  // Comentado todo lo relacionado con medicamentos
+  // const [showMedicamentos, setShowMedicamentos] = useState(false);
+  // const [listaMedicamentos, setListaMedicamentos] = useState([]);
 
-  // Función para cargar medicamentos
-  const cargarMedicamentos = async () => {
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
+  // const cargarMedicamentos = async () => {
+  //   try {
+  //     const auth = getAuth();
+  //     const user = auth.currentUser;
       
-      if (user) {
-        const db = getDatabase();
-        const snapshot = await get(ref(db, `usuarios/${user.uid}/medicamentos`));
+  //     if (user) {
+  //       const db = getDatabase();
+  //       const snapshot = await get(ref(db, `usuarios/${user.uid}/medicamentos`));
         
-        if (snapshot.exists()) {
-          const medicamentosData = snapshot.val();
-          // Convertir objeto de Firebase a array
-          const medicamentosArray = Object.keys(medicamentosData).map(key => ({
-            id: key,
-            ...medicamentosData[key]
-          }));
-          setListaMedicamentos(medicamentosArray);
-        }
-      }
-    } catch (error) {
-      console.error("Error al cargar medicamentos:", error);
-    }
-  };
+  //       if (snapshot.exists()) {
+  //         const medicamentosData = snapshot.val();
+          
+  //         const medicamentosArray = Object.keys(medicamentosData).map(key => ({
+  //           id: key,
+  //           ...medicamentosData[key]
+  //         }));
+  //         setListaMedicamentos(medicamentosArray);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error al cargar medicamentos:", error);
+  //   }
+  // };
 
   useEffect(() => {
-    cargarMedicamentos();
+    // cargarMedicamentos();
   }, []);
 
   const verificarUsuarios = async () => {
@@ -66,89 +65,90 @@ const PantallaInicio = ({ setScreen, nombreUsuario }) => {
   };
 
   return (
-    <ImageBackground 
-      source={imagenFondo}
-      style={{ flex: 1, width: '100%', height: '100%' }}
-      resizeMode="cover"
-    >
-      <View style={{ 
-        flex: 1, 
-        backgroundColor: 'rgba(157, 190, 187, 0.7)',
-        padding: 20
-      }}>
-        <TouchableOpacity 
-          onPress={() => setScreen('VistaDatos')}
-          style={styles.botonPerfil}
-        >
-          <Icon name="account-circle" size={30} color="#243573" />
-        </TouchableOpacity>
+    <View style={{ 
+      flex: 1, 
+      backgroundColor: 'rgba(157, 190, 187, 0.7)',
+      padding: 20
+    }}>
+      <TouchableOpacity 
+        onPress={() => setScreen('VistaDatos')}
+        style={styles.botonPerfil}
+      >
+        <Icon name="account-circle" size={30} color="#243573" />
+      </TouchableOpacity>
 
-        <View style={styles.contenedorPrincipal}>
-          <Text style={styles.tituloBienvenida}>
-            Bienvenido {nombreUsuario}
-          </Text>
+      <TouchableOpacity 
+        onPress={() => setScreen('Busqueda')}
+        style={styles.botonbusqueda}
+      >
+        <Icon name="search" size={30} color="#243573" />
+      </TouchableOpacity>
 
-          <View style={styles.contenidoCentrado}>
-            <TouchableOpacity 
-              onPress={() => setShowMedicamentos(true)}
-              style={styles.botonMedicamentos}
-            >
-              <Icon name="medication" size={24} color="white" style={styles.iconoBoton} />
-              <Text style={styles.textoBotonMedicamentos}>Agregar Medicamentos</Text>
-            </TouchableOpacity>
+      <TouchableOpacity 
+        onPress={() => setScreen('ListaAmigos')}
+        style={styles.botonamigos}
+      >
+        <Icon name="group" size={30} color="#243573" />
+      </TouchableOpacity>
 
-            {listaMedicamentos.length > 0 ? (
-              <View style={styles.vistaPreviaMedicamentos}>
-                <Text style={styles.subtitulo}>Tus Medicamentos:</Text>
-                {listaMedicamentos.slice(0, 3).map((item, index) => (
-                  <Text key={index} style={styles.itemMedicamento}>
-                    • {item.nombre} - {item.dosis}
-                  </Text>
-                ))}
-                {listaMedicamentos.length > 3 && (
-                  <Text style={styles.masItems}>+ {listaMedicamentos.length - 3} más</Text>
-                )}
-              </View>
-            ) : (
-              <View style={styles.vistaPreviaMedicamentos}>
-                <Text style={styles.subtitulo}>No tienes medicamentos registrados</Text>
-              </View>
-            )}
+      <View style={styles.contenedorPrincipal}>
+        <Text style={styles.tituloBienvenida}>
+          Bienvenido {nombreUsuario}
+        </Text>
 
-            <View style={styles.contenedorBotones}>
-              <View style={styles.botonContainer}>
-                <Button
-                  title="Ver usuarios"
-                  onPress={verificarUsuarios}
-                  color="#6200ee"
-                />
-              </View>
+        <View style={styles.contenidoCentrado}>
+          {/* Comentado el botón de medicamentos
+          <TouchableOpacity 
+            onPress={() => setShowMedicamentos(true)}
+            style={styles.botonMedicamentos}
+          >
+            <Icon name="medication" size={24} color="white" style={styles.iconoBoton} />
+            <Text style={styles.textoBotonMedicamentos}>Agregar Medicamentos</Text>
+          </TouchableOpacity> */}
 
-              <View style={styles.botonContainer}>
-                <Button
-                  title="Cerrar sesión"
-                  onPress={() => setScreen('IniciarSesion')}
-                  color="#FF6B6B"
-                />
-              </View>
+          {/* Comentada la vista previa de medicamentos
+          {listaMedicamentos.length > 0 ? (
+            <View style={styles.vistaPreviaMedicamentos}>
+              <Text style={styles.subtitulo}>Tus Medicamentos:</Text>
+              {listaMedicamentos.slice(0, 3).map((item, index) => (
+                <Text key={index} style={styles.itemMedicamento}>
+                  • {item.nombre} - {item.dosis}
+                </Text>
+              ))}
+              {listaMedicamentos.length > 3 && (
+                <Text style={styles.masItems}>+ {listaMedicamentos.length - 3} más</Text>
+              )}
+            </View>
+          ) : (
+            <View style={styles.vistaPreviaMedicamentos}>
+              <Text style={styles.subtitulo}>No tienes medicamentos registrados</Text>
+            </View>
+          )} */}
+
+          <View style={styles.contenedorBotones}>
+            <View style={styles.botonContainer}>
+              <Button
+                title="Ver usuarios"
+                onPress={verificarUsuarios}
+                color="#6200ee"
+              />
+            </View>
+
+            <View style={styles.botonContainer}>
+              <Button
+                title="Cerrar sesión"
+                onPress={() => setScreen('IniciarSesion')}
+                color="#FF6B6B"
+              />
             </View>
           </View>
         </View>
       </View>
-
-      <GestionMedicamentos
-        visible={showMedicamentos}
-        onClose={() => {
-          setShowMedicamentos(false);
-          cargarMedicamentos();
-        }}
-        onSave={(medicamentos) => setListaMedicamentos(medicamentos)}
-      />
-    </ImageBackground>
+    </View>
   );
 };
 
-// Los estilos se mantienen exactamente igual
+// Mantenemos todos los estilos por si se necesitan más adelante
 const styles = StyleSheet.create({
   contenedorPrincipal: {
     flex: 1,
@@ -193,6 +193,20 @@ const styles = StyleSheet.create({
     borderColor: '#4682B4',
     zIndex: 1
   },
+  botonamigos: {
+    position: 'absolute',
+    top: 40,
+    right: 80,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4682B4',
+    zIndex: 1
+  },
   botonMedicamentos: {
     backgroundColor: '#4682B4',
     borderRadius: 25,
@@ -225,6 +239,20 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: '#E0E0E0'
+  },
+  botonbusqueda: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4682B4',
+    zIndex: 1
   },
   subtitulo: {
     fontSize: 18,

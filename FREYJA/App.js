@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, Button, TextInput, Alert } from 'react-native';
-//import PantallaInicio from './componentes/iniciarsesion';
-//import RegistroDeUsuario from './componentes/RegistroDeUsuario';
-//import DatosPersonales from './componentes/DatosPersonales';
-//import VistaDatos from './componentes/VistaDatos';
+import PantallaInicio from './componentes/iniciarsesion';
+import RegistroDeUsuario from './componentes/RegistroDeUsuario';
+import DatosPersonales from './componentes/DatosPersonales';
+import VistaDatos from './componentes/VistaDatos';
+import Busqueda from './componentes/Busqueda';
+import ListaAmigos from './componentes/ListaAmigos';
 
 const IniciarSesion = ({ setScreen, setNombreUsuario }) => { 
   const [email, setEmail] = useState('');
@@ -77,8 +79,8 @@ export default function App() {
         <PantallaInicio 
           setScreen={setScreen} 
           nombreUsuario={nombreUsuario}
-          listaMedicamentos={listaMedicamentos}
-          onShowMedicamentos={() => setShowMedicamentos(true)}
+          //listaMedicamentos={listaMedicamentos}
+          //onShowMedicamentos={() => setShowMedicamentos(true)}
         />
       )}
       {screen === 'IniciarSesion' && (
@@ -101,6 +103,18 @@ export default function App() {
       )}
       {screen === 'VistaDatos' && (
         <VistaDatos 
+          setScreen={setScreen} 
+          nombreUsuario={nombreUsuario} 
+        />
+      )}
+      {screen === 'Busqueda' && (
+        <Busqueda
+          setScreen={setScreen} 
+          nombreUsuario={nombreUsuario} 
+        />
+      )}
+      {screen === 'ListaAmigos' && (
+        <ListaAmigos
           setScreen={setScreen} 
           nombreUsuario={nombreUsuario} 
         />

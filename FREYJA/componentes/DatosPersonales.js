@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
 import { getDatabase, ref, set, get } from 'firebase/database';
-import { getAuth } from 'firebase/auth'; // Añadido para obtener el usuario actual
+import { getAuth } from 'firebase/auth'; 
 
 const RegistroDatos = ({ setScreen }) => {
   const [nombrecompleto, setNombrecompleto] = useState('');
@@ -16,8 +16,8 @@ const RegistroDatos = ({ setScreen }) => {
     }
 
     try {
-      const auth = getAuth(); // Obtiene la instancia de autenticación
-      const user = auth.currentUser; // Usuario actual
+      const auth = getAuth(); 
+      const user = auth.currentUser; 
 
       if (!user) {
         Alert.alert("Error", "No hay usuario autenticado. Inicia sesión primero.");
@@ -25,9 +25,9 @@ const RegistroDatos = ({ setScreen }) => {
       }
 
       const db = getDatabase();
-      // Guarda los datos en el nodo del usuario actual (usando su UID)
-      await set(ref(db, `usuarios/${user.uid}/datos_personales`), { // Añadí una subruta "datos_personales" para organizar mejor
+      await set(ref(db, `usuarios/${user.uid}/datos_personales`), {
         nombrecompleto,
+        userId: '',
         edad,
         genero,
         estatura,
