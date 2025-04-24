@@ -3,6 +3,7 @@ import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
 import { getDatabase, ref, set, get } from 'firebase/database';
 import { getAuth } from 'firebase/auth'; 
 
+
 const RegistroDatos = ({ setScreen }) => {
   const [nombrecompleto, setNombrecompleto] = useState('');
   const [edad, setEdad] = useState('');

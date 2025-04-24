@@ -3,9 +3,10 @@ import { View, Text, Button, Alert, StyleSheet, TouchableOpacity } from 'react-n
 import { getDatabase, ref, get } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { auth } from '../firebase/firebase';
 //import GestionMedicamentos from './GestionMedicamentos';
 
-const PantallaInicio = ({ setScreen, nombreUsuario }) => {
+const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
   // Comentado todo lo relacionado con medicamentos
   // const [showMedicamentos, setShowMedicamentos] = useState(false);
   // const [listaMedicamentos, setListaMedicamentos] = useState([]);
@@ -67,7 +68,7 @@ const PantallaInicio = ({ setScreen, nombreUsuario }) => {
   return (
     <View style={{ 
       flex: 1, 
-      backgroundColor: 'rgba(157, 190, 187, 0.7)',
+      backgroundColor: 'rgba(172, 163, 247, 0.89)',
       padding: 20
     }}>
       <TouchableOpacity 
@@ -90,7 +91,19 @@ const PantallaInicio = ({ setScreen, nombreUsuario }) => {
       >
         <Icon name="group" size={30} color="#243573" />
       </TouchableOpacity>
-
+      
+      <TouchableOpacity 
+        onPress={() => setScreen('Calendario')}
+        style={styles.botoncalendario}
+      >
+        <Icon name="calendar-today" size={30} color="#243573" />
+      </TouchableOpacity>
+      <TouchableOpacity 
+        onPress={() => setScreen('Notificaciones')}
+        style={styles.botonNotificaciones}
+      >
+        <Icon name="notifications" size={30} color="#243573" />
+      </TouchableOpacity>
       <View style={styles.contenedorPrincipal}>
         <Text style={styles.tituloBienvenida}>
           Bienvenido {nombreUsuario}
@@ -143,7 +156,7 @@ const PantallaInicio = ({ setScreen, nombreUsuario }) => {
             <View style={styles.botonContainer}>
               <Button
                 title="Cerrar sesión"
-                onPress={() => setScreen('IniciarSesion')}
+                onPress={cerrarSesion}
                 color="#FF6B6B"
               />
             </View>
@@ -203,6 +216,34 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 40,
     right: 80,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4682B4',
+    zIndex: 1
+  },
+  botoncalendario: {
+    position: 'absolute',
+    top: 40,
+    right: 140,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4682B4',
+    zIndex: 1
+  },
+  botonNotificaciones: {
+    position: 'absolute',
+    top: 40,
+    right: 200,
     backgroundColor: '#F0F8FF',
     borderRadius: 25,
     width: 50,

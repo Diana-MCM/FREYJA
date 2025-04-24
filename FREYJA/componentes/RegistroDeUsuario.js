@@ -4,6 +4,7 @@ import { registrarUsuario } from './Auth_api.js';
 import { getAuth, updateProfile } from 'firebase/auth';
 import { getDatabase, ref, set, get } from 'firebase/database';
 
+
 const RegistroDeUsuario = ({ setScreen, setNombreUsuario }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

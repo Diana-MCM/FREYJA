@@ -5,6 +5,7 @@ import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Button } from 'react-native';
 
+
 const ListaAmigos = ({ setScreen }) => {
   const [amigos, setAmigos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +107,14 @@ const ListaAmigos = ({ setScreen }) => {
         <Icon name="person-search" size={20} color="white" />
         <Text style={styles.textoBotonBuscar}>Buscar Amigos</Text>
       </TouchableOpacity>
-      
+
+      <TouchableOpacity 
+        style={styles.botonsolicitud}
+        onPress={() => setScreen('SolicitudesAmistad')}
+      >
+        <Icon name="group-add" size={20} color="white" />
+        <Text style={styles.textoBotonBuscar}>solicutudes de amistad</Text>
+      </TouchableOpacity>
       <Button
         title="Volver a Inicio"
         onPress={() => setScreen('Inicio')}
@@ -127,6 +135,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    marginTop: 10,
     color: '#333',
     textAlign: 'center'
   },
@@ -189,7 +198,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#6200EE',
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 15
+  },
+  botonsolicitud: {
+    flexDirection: 'row',
+    backgroundColor: '#6200EE',
+    borderRadius: 8,
+    paddingVertical: 20,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
