@@ -32,11 +32,11 @@ const VistaDatos = ({ setScreen }) => {
         const personalDataSnapshot = await get(personalDataRef);
 
         if (snapshot.exists() || personalDataSnapshot.exists()) {
-            const userData = snapshot.exists() ? snapshot.val() : {};
-            const personalData = personalDataSnapshot.exists() ? personalDataSnapshot.val() : {};
+          const userData = snapshot.exists() ? snapshot.val() : {};
+          const personalData = personalDataSnapshot.exists() ? personalDataSnapshot.val() : {};
 
           setDatosUsuario({
-            nombrecompleto: personalData.nombrecompleto || 'No registrado',
+            nombrecompleto: personalData.nombrecompleto || userData.nombre || 'No registrado',
             userId: userData.userId || 'No asignado',
             edad: personalData.edad || 'No registrado',
             genero: personalData.genero || 'No registrado',
@@ -125,6 +125,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
     color: '#333'
+  },
+  userId: {
+    color: '#1E88E5',
+    fontWeight: 'bold'
   },
   loadingContainer: {
     flex: 1,

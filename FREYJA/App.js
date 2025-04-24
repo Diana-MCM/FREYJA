@@ -1,22 +1,54 @@
 import React, { useState } from 'react';
 import { View, Text, Button, TextInput, Alert } from 'react-native';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import PantallaInicio from './componentes/iniciarsesion';
 import RegistroDeUsuario from './componentes/RegistroDeUsuario';
 import DatosPersonales from './componentes/DatosPersonales';
 import VistaDatos from './componentes/VistaDatos';
 import Busqueda from './componentes/Busqueda';
 import ListaAmigos from './componentes/ListaAmigos';
+import Calendario from './componentes/Calendario';
+import { auth } from './firebase/firebase';
+import { signOut } from 'firebase/auth';
+import Notificaciones from './componentes/Notificaciones';
+import SolicitudesAmistad from './componentes/SolicitudesAmistad';
 
 const IniciarSesion = ({ setScreen, setNombreUsuario }) => { 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const handleLogin = () => {
-    if (email && password) {
-      setNombreUsuario(email.split('@')[0]); 
-      setScreen('Inicio');
-    } else {
+  const [loading, setLoading] = useState(false);
+  
+  const handleLogin = async () => {
+    if (!email || !password) {
       Alert.alert("Error", "Por favor ingrese correo y contraseña");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const auth = getAuth();
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Obtener el nombre del usuario desde Firebase
+      const user = userCredential.user;
+      const nombre = user.displayName || email.split('@')[0];
+      
+      setNombreUsuario(nombre);
+      setScreen('Inicio');
+    } catch (error) {
+      let errorMessage = "Error al iniciar sesión";
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = "Usuario no encontrado";
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = "Contraseña incorrecta";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Correo electrónico inválido";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Demasiados intentos. Cuenta temporalmente bloqueada";
+      }
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,6 +70,8 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
         placeholder="Correo"
         value={email}
         onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
         style={{ 
           borderWidth: 1, 
           marginBottom: 10, 
@@ -59,26 +93,42 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
           backgroundColor: 'white' 
         }}
       />
-      <Button title="Entrar" onPress={handleLogin}/>
-      <Button title="Registrarse" onPress={() => setScreen('RegistroDeUsuario')} />
+      <Button 
+        title="Entrar" 
+        onPress={handleLogin}
+        disabled={loading}
+      />
+      <Button 
+        title="Registrarse" 
+        onPress={() => setScreen('RegistroDeUsuario')} 
+        disabled={loading}
+      />
     </View>
   );
 };
-
-
 
 export default function App() {
   const [screen, setScreen] = useState('IniciarSesion');
   const [nombreUsuario, setNombreUsuario] = useState('');
   //const [showMedicamentos, setShowMedicamentos] = useState(false);
   //const [listaMedicamentos, setListaMedicamentos] = useState([]);
-
+  const cerrarSesion = async () => {
+    try {
+      await signOut(auth);
+      setNombreUsuario('');
+      setScreen('IniciarSesion');
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      Alert.alert("Error", "No se pudo cerrar la sesión");
+    }
+  };
   return (
     <View style={{ flex: 1 }}>
       {screen === 'Inicio' && (
         <PantallaInicio 
           setScreen={setScreen} 
           nombreUsuario={nombreUsuario}
+          cerrarSesion={cerrarSesion}
           //listaMedicamentos={listaMedicamentos}
           //onShowMedicamentos={() => setShowMedicamentos(true)}
         />
@@ -107,6 +157,12 @@ export default function App() {
           nombreUsuario={nombreUsuario} 
         />
       )}
+      {screen === 'Calendario' && (
+        <Calendario 
+          setScreen={setScreen} 
+          nombreUsuario={nombreUsuario} 
+        />
+      )}
       {screen === 'Busqueda' && (
         <Busqueda
           setScreen={setScreen} 
@@ -115,6 +171,18 @@ export default function App() {
       )}
       {screen === 'ListaAmigos' && (
         <ListaAmigos
+          setScreen={setScreen} 
+          nombreUsuario={nombreUsuario} 
+        />
+      )}
+      {screen === 'Notificaciones' && (
+        <Notificaciones 
+          setScreen={setScreen} 
+          nombreUsuario={nombreUsuario} 
+        />
+      )}
+      {screen === 'SolicitudesAmistad' && (
+        <SolicitudesAmistad
           setScreen={setScreen} 
           nombreUsuario={nombreUsuario} 
         />
