@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, Button, TextInput, Alert } from 'react-native';
+import { View, Text, Button, TextInput, Alert, SafeAreaView } from 'react-native';
 import PantallaInicio from './componentes/iniciarsesion';
 import RegistroDeUsuario from './componentes/RegistroDeUsuario';
 import DatosPersonales from './componentes/DatosPersonales';
 import VistaDatos from './componentes/VistaDatos';
 import Busqueda from './componentes/Busqueda';
 import ListaAmigos from './componentes/ListaAmigos';
+import Subirinformacion from './componentes/Subirinformacion';
 
 const IniciarSesion = ({ setScreen, setNombreUsuario }) => { 
   const [email, setEmail] = useState('');
@@ -27,6 +28,7 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
       alignItems: 'center', 
       backgroundColor: '#A89CC8'
     }}>
+      
       <Text style={{ fontSize: 30, fontWeight: 'bold', marginBottom: 10 }}>BIENVENIDO A FREYJA</Text>
       <Text style={{ fontSize: 15, marginBottom: 10, fontFamily: 'Courier New', textAlign: 'center' }}>
         Si ya cuenta con una cuenta, por favor inicie sesión.
@@ -39,6 +41,7 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
         value={email}
         onChangeText={setEmail}
         style={{ 
+          position: '',
           borderWidth: 1, 
           marginBottom: 10, 
           width: 200, 
@@ -119,6 +122,13 @@ export default function App() {
           nombreUsuario={nombreUsuario} 
         />
       )}
+      {screen === 'Subirinformacion' && (
+        <Subirinformacion
+          setScreen={setScreen} 
+          nombreUsuario={nombreUsuario} 
+        />
+      )}
+
     </View>
   );
 }
