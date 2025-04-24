@@ -18,15 +18,3 @@ const firebaseConfig = {
   appId: "1:12235686241:web:22bfd18cc025ebb5d90520",
   databaseURL: "https://freyja-45b82-default-rtdb.firebaseio.com/"
 };
-
-
-// Inicializa Firebase solo si no está inicializado
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
-
-// Configura Auth con AsyncStorage para persistencia
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
-
-const db = getDatabase(app);
-export { auth, db };
