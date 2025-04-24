@@ -82,7 +82,7 @@ export default function App() {
         <PantallaInicio 
           setScreen={setScreen} 
           nombreUsuario={nombreUsuario}
-          //listaMedicamentos={listaMedicamentos}
+          //listaMedicamentos={listaMedicamentos
           //onShowMedicamentos={() => setShowMedicamentos(true)}
         />
       )}

@@ -142,7 +142,7 @@ const PantallaInicio = ({ setScreen, nombreUsuario }) => {
 
             <View style={styles.botonContainer}>
               <Button
-                title="Cerrar sesión"
+                title="Cerrar sesió"
                 onPress={() => setScreen('IniciarSesion')}
                 color="#FF6B6B"
               />

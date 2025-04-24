@@ -9,7 +9,7 @@ const Subirinformacion = ({ setScreen, nombreUsuario }) => {
       <SafeAreaView>
      
       <View style={styles.header}>
-        <Text style={styles.headerText}>Archivos</Text>
+        <Text style={styles.headerText}>Archives</Text>
       </View>
       </SafeAreaView>
       
