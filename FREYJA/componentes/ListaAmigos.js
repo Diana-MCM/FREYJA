@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, SafeAreaView } from 'react-native';
 import { getDatabase, ref, onValue, off, update } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -83,6 +83,7 @@ const ListaAmigos = ({ setScreen }) => {
 
   return (
     <View style={styles.container}>
+         <SafeAreaView>
       <Text style={styles.titulo}>Mis Amigos</Text>
       
       {loading ? (
@@ -111,6 +112,7 @@ const ListaAmigos = ({ setScreen }) => {
         onPress={() => setScreen('Inicio')}
         color="#757575"
       />
+         </SafeAreaView>
     </View>
   );
 };
