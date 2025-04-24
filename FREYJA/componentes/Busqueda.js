@@ -20,6 +20,11 @@ const BuscarAmigos = ({ setScreen }) => {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
+      if (!user) {
+        Alert.alert("Error", "Debes iniciar sesión primero");
+        return;
+      }
+
       const db = getDatabase();
       const usersRef = ref(db, 'usuarios');
       const queryRef = query(usersRef, orderByChild('userId'), equalTo(userIdBusqueda));
@@ -31,6 +36,33 @@ const BuscarAmigos = ({ setScreen }) => {
         const amigoData = Object.values(datos)[0];
         const amigoId = Object.keys(datos)[0];
         
+        // Verificar si no es el propio usuario
+        if (amigoId === user.uid) {
+          Alert.alert("Oops", "¡Este es tu propio ID de usuario!");
+          setAmigoEncontrado(null);
+          return;
+        }
+
+        // Verificar si ya son amigos
+        const amigosRef = ref(db, `usuarios/${user.uid}/amigos/${amigoId}`);
+        const amigosSnapshot = await get(amigosRef);
+        
+        if (amigosSnapshot.exists()) {
+          Alert.alert("Info", "Ya eres amigo de este usuario");
+          setAmigoEncontrado(null);
+          return;
+        }
+
+        // Verificar si ya existe una solicitud pendiente
+        const solicitudesRef = ref(db, `usuarios/${amigoId}/solicitudes/${user.uid}`);
+        const solicitudSnapshot = await get(solicitudesRef);
+        
+        if (solicitudSnapshot.exists()) {
+          Alert.alert("Info", "Ya has enviado una solicitud a este usuario");
+          setAmigoEncontrado(null);
+          return;
+        }
+
         setAmigoEncontrado({
           id: amigoId,
           nombre: amigoData.nombre,
@@ -50,30 +82,40 @@ const BuscarAmigos = ({ setScreen }) => {
     }
   };
 
-  const agregarAmigo = async () => {
+  const enviarSolicitud = async () => {
     if (!amigoEncontrado) return;
 
     try {
       const auth = getAuth();
       const user = auth.currentUser;
+      if (!user) {
+        Alert.alert("Error", "Debes iniciar sesión primero");
+        return;
+      }
+
       const db = getDatabase();
       
-      // Actualizar la lista de amigos del usuario actual
+      // Obtener datos del usuario actual
+      const userRef = ref(db, `usuarios/${user.uid}`);
+      const userSnapshot = await get(userRef);
+      const userData = userSnapshot.val();
+      
+      // Crear la solicitud en el amigo
       const updates = {};
-      updates[`usuarios/${user.uid}/amigos/${amigoEncontrado.id}`] = {
-        nombre: amigoEncontrado.nombre,
-        userId: amigoEncontrado.userId,
-        fechaAgregado: new Date().toISOString()
+      updates[`usuarios/${amigoEncontrado.id}/solicitudes/${user.uid}`] = {
+        nombre: userData.nombre,
+        userId: userData.userId,
+        fechaSolicitud: new Date().toISOString()
       };
 
       await update(ref(db), updates);
       
-      Alert.alert("¡Éxito!", `${amigoEncontrado.nombre} ha sido agregado a tu lista de amigos`);
+      Alert.alert("¡Éxito!", `Solicitud enviada a ${amigoEncontrado.nombre}`);
       setAmigoEncontrado(null);
       setUserIdBusqueda('');
     } catch (error) {
-      console.error("Error al agregar amigo:", error);
-      Alert.alert("Error", "No se pudo agregar al amigo");
+      console.error("Error al enviar solicitud:", error);
+      Alert.alert("Error", "No se pudo enviar la solicitud");
     }
   };
 
@@ -111,11 +153,11 @@ const BuscarAmigos = ({ setScreen }) => {
           </Text>
           
           <TouchableOpacity 
-            style={styles.botonAgregar}
-            onPress={agregarAmigo}
+            style={styles.botonSolicitud}
+            onPress={enviarSolicitud}
           >
-            <Icon name="person-add" size={20} color="white" />
-            <Text style={styles.textoBotonAgregar}>Agregar Amigo</Text>
+            <Icon name="send" size={20} color="white" />
+            <Text style={styles.textoBotonSolicitud}>Enviar Solicitud</Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -139,6 +181,7 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: 'bold',
     marginBottom: 25,
+    marginTop: 15,
     color: '#333',
     textAlign: 'center'
   },
@@ -193,9 +236,9 @@ const styles = StyleSheet.create({
     color: '#757575',
     marginBottom: 15
   },
-  botonAgregar: {
+  botonSolicitud: {
     flexDirection: 'row',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#FF9800',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -203,7 +246,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10
   },
-  textoBotonAgregar: {
+  textoBotonSolicitud: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold'
