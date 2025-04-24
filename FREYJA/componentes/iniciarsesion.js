@@ -137,7 +137,13 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
               <Text style={styles.subtitulo}>No tienes medicamentos registrados</Text>
             </View>
           )} */}
-
+          <TouchableOpacity 
+            style={styles.botonSubirInformacion}
+            onPress={() => setScreen('Subirinformacion')}
+          >
+            <Icon name="upload" size={30} color="white" />
+            <Text style={[styles.textoBotonAgregar, { color: "white" }]}>Subir informacion</Text>
+          </TouchableOpacity>
           <View style={styles.contenedorBotones}>
             <View style={styles.botonContainer}>
               <Button
@@ -294,6 +300,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4682B4',
     zIndex: 1
+  },
+  botonSubirInformacion: {
+    flexDirection: 'row',
+    backgroundColor: '#4f784f',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10
   },
   subtitulo: {
     fontSize: 18,
