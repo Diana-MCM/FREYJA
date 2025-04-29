@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert,Button } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Button } from 'react-native';
 import { getDatabase, ref, onValue, off, update } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -38,11 +38,12 @@ const SolicitudesAmistad = ({ setScreen }) => {
       },
       (error) => {
         console.error("Error al cargar solicitudes:", error);
+        Alert.alert("Error", "No se pudieron cargar las solicitudes");
         setLoading(false);
       }
     );
   
-    return () => unsubscribe();
+    return () => off(solicitudesRef);
   }, []);
 
   const aceptarSolicitud = async (solicitud) => {
@@ -62,18 +63,29 @@ const SolicitudesAmistad = ({ setScreen }) => {
       // Agregar como amigos mutuamente
       updates[`usuarios/${user.uid}/amigos/${solicitud.id}`] = {
         nombre: solicitud.nombre,
-        userId: solicitud.userId,
+        userId: solicitud.id,
         fechaAmistad: new Date().toISOString()
       };
       
       updates[`usuarios/${solicitud.id}/amigos/${user.uid}`] = {
         nombre: user.displayName || 'Usuario',
-        userId: user.uid.substring(0, 10), // O usa tu sistema de userId
+        userId: user.uid,
         fechaAmistad: new Date().toISOString()
       };
       
       // Eliminar la solicitud
       updates[`usuarios/${user.uid}/solicitudes/${solicitud.id}`] = null;
+      
+      // Crear notificación de amistad aceptada
+      const notificacionId = Date.now().toString();
+      updates[`usuarios/${solicitud.id}/notificaciones/${notificacionId}`] = {
+        titulo: "Solicitud de amistad aceptada",
+        mensaje: `${user.displayName || 'Usuario'} ha aceptado tu solicitud de amistad.`,
+        fecha: new Date().toISOString(),
+        tipo: "amistad_aceptada",
+        userIdOrigen: user.uid,
+        leida: false,
+      };
       
       await update(ref(db), updates);
       
@@ -84,7 +96,7 @@ const SolicitudesAmistad = ({ setScreen }) => {
     }
   };
 
-  const rechazarSolicitud = async (solicitudId) => {
+  const rechazarSolicitud = async (solicitudId, nombreRemitente) => {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
@@ -99,9 +111,20 @@ const SolicitudesAmistad = ({ setScreen }) => {
       const updates = {};
       updates[`usuarios/${user.uid}/solicitudes/${solicitudId}`] = null;
       
+      // Opcional: Notificar al remitente sobre el rechazo
+      const notificacionId = Date.now().toString();
+      updates[`usuarios/${solicitudId}/notificaciones/${notificacionId}`] = {
+        titulo: "Solicitud de amistad rechazada",
+        mensaje: `${user.displayName || 'Usuario'} ha rechazado tu solicitud de amistad.`,
+        fecha: new Date().toISOString(),
+        tipo: "amistad_rechazada",
+        userIdOrigen: user.uid,
+        leida: false,
+      };
+      
       await update(ref(db), updates);
       
-      Alert.alert("Solicitud rechazada", "La solicitud ha sido eliminada");
+      Alert.alert("Solicitud rechazada", `Has rechazado la solicitud de ${nombreRemitente}`);
     } catch (error) {
       console.error("Error al rechazar solicitud:", error);
       Alert.alert("Error", "No se pudo rechazar la solicitud");
@@ -128,7 +151,7 @@ const SolicitudesAmistad = ({ setScreen }) => {
         
         <TouchableOpacity 
           style={styles.botonRechazar}
-          onPress={() => rechazarSolicitud(item.id)}
+          onPress={() => rechazarSolicitud(item.id, item.nombre)}
         >
           <Icon name="close" size={20} color="white" />
         </TouchableOpacity>
@@ -143,7 +166,10 @@ const SolicitudesAmistad = ({ setScreen }) => {
       {loading ? (
         <Text style={styles.cargando}>Cargando solicitudes...</Text>
       ) : solicitudes.length === 0 ? (
-        <Text style={styles.sinSolicitudes}>No tienes solicitudes pendientes</Text>
+        <View style={styles.sinSolicitudesContainer}>
+          <Icon name="group" size={50} color="#757575" style={styles.iconoSinSolicitudes} />
+          <Text style={styles.sinSolicitudes}>No tienes solicitudes pendientes</Text>
+        </View>
       ) : (
         <FlatList
           data={solicitudes}
@@ -180,9 +206,17 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     color: '#757575'
   },
+  sinSolicitudesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 20
+  },
+  iconoSinSolicitudes: {
+    marginBottom: 15
+  },
   sinSolicitudes: {
     textAlign: 'center',
-    marginVertical: 20,
     color: '#757575',
     fontSize: 16
   },
@@ -244,46 +278,3 @@ const styles = StyleSheet.create({
 });
 
 export default SolicitudesAmistad;
-
-export const enviarSolicitudAmistad = async (userIdDestino, nombreDestino) => {
-  try {
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (!user) {
-      throw new Error("Debes iniciar sesión primero");
-    }
-
-    const db = getDatabase();
-    const userIdOrigen = user.uid;
-    const nombreOrigen = user.displayName || "Usuario";
-
-    // Crear las actualizaciones para Firebase
-    const updates = {};
-
-    // Agregar la solicitud de amistad en la ruta del destinatario
-    updates[`usuarios/${userIdDestino}/solicitudes/${userIdOrigen}`] = {
-      nombre: nombreOrigen,
-      userId: userIdOrigen,
-      fechaSolicitud: new Date().toISOString(),
-    };
-
-    // Agregar una notificación en la bandeja del destinatario
-    const notificacionId = Date.now().toString(); // Generar un ID único para la notificación
-    updates[`usuarios/${userIdDestino}/notificaciones/${notificacionId}`] = {
-      titulo: "Nueva solicitud de amistad",
-      mensaje: `${nombreOrigen} quiere ser tu amigo.`,
-      fecha: new Date().toISOString(),
-      tipo: "solicitud_amistad", // Puedes usar este campo para identificar el tipo de notificación
-      userIdOrigen: userIdOrigen,
-    };
-
-    // Actualizar Firebase
-    await update(ref(db), updates);
-
-    return { success: true, message: "Solicitud de amistad enviada y notificación creada" };
-  } catch (error) {
-    console.error("Error al enviar solicitud de amistad:", error);
-    return { success: false, error: error.message };
-  }
-};

@@ -12,8 +12,9 @@ import { auth } from './firebase/firebase';
 import { signOut } from 'firebase/auth';
 import Notificaciones from './componentes/Notificaciones';
 import SolicitudesAmistad from './componentes/SolicitudesAmistad';
-import Subirinformacion from './componentes/Subirinformacion';
-
+import * as Notifications from 'expo-notifications';
+import { useEffect } from 'react';
+import { inicializarEstructuraNotificaciones } from './componentes/FirebaseUtils';
 
 const IniciarSesion = ({ setScreen, setNombreUsuario }) => { 
   const [email, setEmail] = useState('');
@@ -53,7 +54,7 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
       setLoading(false);
     }
   };
-
+  
   return (
     <View style={{ 
       flex: 1, 
@@ -114,6 +115,22 @@ export default function App() {
   const [nombreUsuario, setNombreUsuario] = useState('');
   //const [showMedicamentos, setShowMedicamentos] = useState(false);
   //const [listaMedicamentos, setListaMedicamentos] = useState([]);
+  useEffect(() => {
+    const configureNotifications = async () => {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        await Notifications.requestPermissionsAsync();
+      }
+    };
+    Notifications.setNotificationHandler({
+     handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+     }),
+    });
+    configureNotifications();
+  }, []);
   const cerrarSesion = async () => {
     try {
       await signOut(auth);
@@ -189,13 +206,6 @@ export default function App() {
           nombreUsuario={nombreUsuario} 
         />
       )}
-      {screen === 'Subirinformacion' && (
-        <Subirinformacion
-          setScreen={setScreen} 
-          nombreUsuario={nombreUsuario} 
-        />
-      )}
-
     </View>
   );
 }

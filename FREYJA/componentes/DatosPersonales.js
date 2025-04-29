@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
-import { getDatabase, ref, set, get } from 'firebase/database';
+import { getDatabase, ref, set, get,update } from 'firebase/database';
 import { getAuth } from 'firebase/auth'; 
 
 
@@ -9,6 +9,28 @@ const RegistroDatos = ({ setScreen }) => {
   const [edad, setEdad] = useState('');
   const [genero, setGenero] = useState('');
   const [estatura, setEstatura] = useState('');
+
+  // Función para generar un ID único de 10 dígitos (copiada del primer componente)
+  const generarUserIdUnico = async () => {
+    const db = getDatabase();
+    let userIdGenerado;
+    let existe = true;
+
+    while (existe) {
+      userIdGenerado = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+      const snapshot = await get(ref(db, 'usuarios'));
+      
+      if (snapshot.exists()) {
+        const usuarios = snapshot.val();
+        const ids = Object.values(usuarios).map(u => u.userId);
+        existe = ids.includes(userIdGenerado);
+      } else {
+        existe = false;
+      }
+    }
+
+    return userIdGenerado;
+  };
 
   const guardarDatos = async () => {
     if (!nombrecompleto || !edad || !genero || !estatura) {
@@ -26,13 +48,20 @@ const RegistroDatos = ({ setScreen }) => {
       }
 
       const db = getDatabase();
+      const userId = await generarUserIdUnico(); // Generamos el ID único aquí
+      
       await set(ref(db, `usuarios/${user.uid}/datos_personales`), {
         nombrecompleto,
-        userId: '',
+        userId: userId, // Usamos el ID generado
         edad,
         genero,
         estatura,
         fechaRegistro: new Date().toISOString()
+      });
+
+      // Actualizamos también el userId en el nodo principal del usuario
+      await update(ref(db, `usuarios/${user.uid}`), {
+        userId: userId
       });
 
       // Verificación opcional (puedes quitarla si no la necesitas)
