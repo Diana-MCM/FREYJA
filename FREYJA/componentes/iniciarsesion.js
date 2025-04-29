@@ -4,9 +4,17 @@ import { getDatabase, ref, get } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { auth } from '../firebase/firebase';
+import {Modal} from 'react-native';
+import { onValue } from 'firebase/database';
 //import GestionMedicamentos from './GestionMedicamentos';
 
 const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
+  const [modalVisible, setModalVisible] = useState(false); // Estado para controlar el modal
+  const abrirModal = () => setModalVisible(true);
+  const cerrarModal = () => setModalVisible(false);
+  const [tieneNotificaciones, setTieneNotificaciones] = useState(false);
+  const [numeroNotificaciones, setNumeroNotificaciones] = useState(0);
+
   // Comentado todo lo relacionado con medicamentos
   // const [showMedicamentos, setShowMedicamentos] = useState(false);
   // const [listaMedicamentos, setListaMedicamentos] = useState([]);
@@ -37,6 +45,26 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
 
   useEffect(() => {
     // cargarMedicamentos();
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      console.error("Usuario no autenticado");
+      return;
+    }
+
+    const db = getDatabase();
+    const notificacionesRef = ref(db, `usuarios/${user.uid}/notificaciones`);
+
+    // Escucha cambios en las notificaciones
+    const unsubscribe = onValue(notificacionesRef, (snapshot) => {
+      const data = snapshot.val();
+      const totalNotificaciones = data ? Object.keys(data).length : 0;
+      setNumeroNotificaciones(totalNotificaciones); // Actualiza el estado
+    });
+
+    // Limpia el listener al desmontar el componente
+    return () => unsubscribe();
   }, []);
 
   const verificarUsuarios = async () => {
@@ -72,37 +100,97 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
       padding: 20
     }}>
       <TouchableOpacity 
-        onPress={() => setScreen('VistaDatos')}
-        style={styles.botonPerfil}
+        onPress={abrirModal}
+        style={styles.botonMenu}
       >
-        <Icon name="account-circle" size={30} color="#243573" />
+        <Icon name="menu" size={30} color="#243573" />
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        onPress={() => setScreen('Busqueda')}
-        style={styles.botonbusqueda}
+      {/* Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={cerrarModal}
       >
-        <Icon name="search" size={30} color="#243573" />
-      </TouchableOpacity>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Menú</Text>
 
-      <TouchableOpacity 
-        onPress={() => setScreen('ListaAmigos')}
-        style={styles.botonamigos}
-      >
-        <Icon name="group" size={30} color="#243573" />
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        onPress={() => setScreen('Calendario')}
-        style={styles.botoncalendario}
-      >
-        <Icon name="calendar-today" size={30} color="#243573" />
-      </TouchableOpacity>
+            <TouchableOpacity 
+             style={styles.modalButton}
+             onPress={() => {
+              setScreen('VistaDatos');
+              cerrarModal();
+             }}
+            >
+            <Icon name="account-circle" size={20} color="white" style={styles.modalButtonIcon} />
+            <Text style={styles.modalButtonText}>Ver Datos</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+             style={styles.modalButton}
+             onPress={() => {
+              setScreen('Busqueda');
+              cerrarModal();
+             }}
+            >
+            <Icon name="search" size={20} color="white" style={styles.modalButtonIcon} />
+            <Text style={styles.modalButtonText}>Buscar Amigos</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+             style={styles.modalButton}
+             onPress={() => {
+              setScreen('ListaAmigos');
+              cerrarModal();
+             }}
+            >
+            <Icon name="group" size={20} color="white" style={styles.modalButtonIcon} />
+            <Text style={styles.modalButtonText}>Lista de Amigos</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+             style={styles.modalButton}
+             onPress={() => {
+              setScreen('Calendario');
+              cerrarModal();
+             }}
+            >
+            <Icon name="calendar-today" size={20} color="white" style={styles.modalButtonIcon} />
+            <Text style={styles.modalButtonText}>Calendario</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+             style={styles.modalButton}
+             onPress={() => {
+              cerrarSesion();
+              cerrarModal();
+             }}
+            >
+            <Icon name="logout" size={20} color="white" style={styles.modalButtonIcon} />
+            <Text style={styles.modalButtonText}>Cerrar Sesión</Text>
+            </TouchableOpacity>
+
+            <Button title="Cerrar Menú" onPress={cerrarModal} color="#FF6B6B" />
+          </View>
+        </View>
+      </Modal>
+
       <TouchableOpacity 
         onPress={() => setScreen('Notificaciones')}
         style={styles.botonNotificaciones}
       >
-        <Icon name="notifications" size={30} color="#243573" />
+        <Icon 
+          name="notifications" 
+          size={30} 
+          color= "#243573" 
+       />
+        {numeroNotificaciones > 0 && (
+          <View style={styles.indicadorNotificaciones}>
+            <Text style={styles.textoIndicador}>{numeroNotificaciones}</Text>
+          </View>
+     )}
       </TouchableOpacity>
       <View style={styles.contenedorPrincipal}>
         <Text style={styles.tituloBienvenida}>
@@ -146,13 +234,7 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
                 color="#6200ee"
               />
             </View>
-
             <View style={styles.botonContainer}>
-              <Button
-                title="Cerrar sesión"
-                onPress={cerrarSesion}
-                color="#FF6B6B"
-              />
             </View>
           </View>
         </View>
@@ -192,60 +274,18 @@ const styles = StyleSheet.create({
   contenedorBotones: {
     marginTop: 20
   },
-  botonPerfil: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    backgroundColor: '#F0F8FF',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#4682B4',
-    zIndex: 1
-  },
-  botonamigos: {
-    position: 'absolute',
-    top: 40,
-    right: 80,
-    backgroundColor: '#F0F8FF',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#4682B4',
-    zIndex: 1
-  },
-  botoncalendario: {
-    position: 'absolute',
-    top: 40,
-    right: 140,
-    backgroundColor: '#F0F8FF',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#4682B4',
-    zIndex: 1
-  },
   botonNotificaciones: {
     position: 'absolute',
     top: 40,
-    right: 200,
-    backgroundColor: '#F0F8FF',
+    right: 80,
+    backgroundColor: 'transparent',
     borderRadius: 25,
     width: 50,
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#4682B4',
+    borderColor:'transparent' ,
     zIndex: 1
   },
   botonMedicamentos: {
@@ -281,20 +321,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0'
   },
-  botonbusqueda: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    backgroundColor: '#F0F8FF',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#4682B4',
-    zIndex: 1
-  },
   subtitulo: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -312,7 +338,88 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginTop: 5
-  }
+  },
+  botonMenu: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    backgroundColor: 'transparent',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    zIndex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo semitransparente
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333',
+  },
+  modalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    padding: 15,
+    backgroundColor: '#6200EE',
+    borderRadius: 8,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  modalButtonIcon: {
+    marginRight: 10, 
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  botonNotificaciones: {
+    position: 'absolute',
+    top: 40,
+    right: 80,
+    backgroundColor: 'transparent',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    zIndex: 1,
+  },
+  indicadorNotificaciones: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  textoIndicador: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
 });
 
 export default PantallaInicio;

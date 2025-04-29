@@ -1,76 +1,50 @@
 import React, { useState } from 'react';
-import { View, Text, Button, TextInput, Alert } from 'react-native';
-import { registrarUsuario } from './Auth_api.js';
-import { getAuth, updateProfile } from 'firebase/auth';
-import { getDatabase, ref, set, get } from 'firebase/database';
+import { View, Text, TextInput, Button, Alert } from 'react-native';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '../firebase/firebase';
+import { inicializarEstructuraNotificaciones } from './FirebaseUtils';
+import { getDatabase, ref, update } from 'firebase/database';
 
-
-const RegistroDeUsuario = ({ setScreen, setNombreUsuario }) => {
+const RegistroDeUsuario = ({ setScreen }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nombre, setNombre] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!nombre || !email || !password) {
-      Alert.alert("Error", "Todos los campos son obligatorios");
-      return;
-    }
-
     try {
-      const resultado = await registrarUsuario(email, password);
-      
-      if (!resultado.success) {
-        Alert.alert("Error", resultado.error);
-        return;
+      setLoading(true);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Actualiza el perfil del usuario con un nombre
+      await updateProfile(user, { displayName: nombre });
+
+      // Inicializa la estructura de notificaciones
+      const userId = user.uid;
+      const resultado = await inicializarEstructuraNotificaciones(userId);
+
+      if (resultado) {
+        console.log("Estructura de notificaciones inicializada correctamente");
+      } else {
+        console.error("Error al inicializar la estructura de notificaciones");
       }
 
-      const auth = getAuth();
       const db = getDatabase();
-
-      // Función para generar un ID único de 10 dígitos
-      const generarUserIdUnico = async () => {
-        let userIdGenerado;
-        let existe = true;
-
-        while (existe) {
-          userIdGenerado = Math.floor(1000000000 + Math.random() * 9000000000).toString();
-          const snapshot = await get(ref(db, 'usuarios'));
-          
-          if (snapshot.exists()) {
-            const usuarios = snapshot.val();
-            const ids = Object.values(usuarios).map(u => u.userId);
-            existe = ids.includes(userIdGenerado);
-          } else {
-            existe = false;
-          }
-        }
-
-        return userIdGenerado;
-      };
-
-      // Actualizar perfil con nombre
-      await updateProfile(auth.currentUser, {
-        displayName: nombre
+      await update(ref(db, `usuarios/${userId}`), {
+      nombre: nombre || "Usuario sin nombre", // Valor predeterminado si nombre está vacío
+      correo: email,
+      solicitudes: {}, // Inicializa solicitudes como un objeto vacío
+      notificaciones: {}, // Inicializa notificaciones como un objeto vacío
       });
 
-      // Obtener userId único
-      const userId = await generarUserIdUnico();
-
-      // Guardar en base de datos
-      await set(ref(db, 'usuarios/' + auth.currentUser.uid), {
-        nombre,
-        email,
-        userId,
-        fechaRegistro: new Date().toISOString()
-      });
-
-      Alert.alert("Éxito", "Usuario registrado correctamente");
-      setNombreUsuario(nombre);
-      setScreen('DatosPersonales'); 
-      
+      Alert.alert("Registro exitoso", "Usuario registrado correctamente");
+      setScreen('DatosPersonales');
     } catch (error) {
-      console.error("Error completo:", error);
-      Alert.alert("Error", "Ocurrió un problema durante el registro");
+      console.error("Error al registrar usuario:", error);
+      Alert.alert("Error", "No se pudo registrar el usuario. Inténtalo de nuevo.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,32 +53,33 @@ const RegistroDeUsuario = ({ setScreen, setNombreUsuario }) => {
       flex: 1, 
       justifyContent: 'center', 
       alignItems: 'center', 
-      backgroundColor: 'rgba(157, 190, 187, 0.7)',
-      padding: 20
+      backgroundColor: '#A89CC8'
     }}>
-      <Text style={{ marginBottom: 20 }}>Registrarse para poder ingresar</Text>
+      <Text style={{ fontSize: 30, fontWeight: 'bold', marginBottom: 10 }}>REGISTRO</Text>
       <TextInput
-        placeholder="Nombre de Usuario"
+        placeholder="Nombre"
         value={nombre}
         onChangeText={setNombre}
         style={{ 
           borderWidth: 1, 
           marginBottom: 10, 
           width: 200, 
-          padding: 5,
-          backgroundColor: 'white'
+          padding: 5, 
+          backgroundColor: 'white' 
         }}
       />
       <TextInput
         placeholder="Correo"
         value={email}
         onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
         style={{ 
           borderWidth: 1, 
           marginBottom: 10, 
           width: 200, 
-          padding: 5,
-          backgroundColor: 'white'
+          padding: 5, 
+          backgroundColor: 'white' 
         }}
       />
       <TextInput
@@ -120,10 +95,16 @@ const RegistroDeUsuario = ({ setScreen, setNombreUsuario }) => {
           backgroundColor: 'white' 
         }}
       />
-      <View style={{ marginBottom: 10 }}>
-        <Button title="Registrar" onPress={handleRegister} />
-      </View>
-      <Button title="Volver" onPress={() => setScreen('IniciarSesion')} />
+      <Button 
+        title="Registrarse" 
+        onPress={handleRegister}
+        disabled={loading}
+      />
+      <Button 
+        title="Volver" 
+        onPress={() => setScreen('IniciarSesion')} 
+        disabled={loading}
+      />
     </View>
   );
 };
