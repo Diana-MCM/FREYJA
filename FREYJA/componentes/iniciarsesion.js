@@ -6,6 +6,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { auth } from '../firebase/firebase';
 import {Modal} from 'react-native';
 import { onValue } from 'firebase/database';
+import Subirinformacion from './Subirinformacion';
 //import GestionMedicamentos from './GestionMedicamentos';
 
 const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
@@ -54,7 +55,7 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
     }
 
     const db = getDatabase();
-    const notificacionesRef = ref(db, usuarios/${user.uid}/notificaciones);
+    const notificacionesRef = ref(db, `usuarios/${user.uid}/notificaciones`);
 
     // Escucha cambios en las notificaciones
     const unsubscribe = onValue(notificacionesRef, (snapshot) => {
@@ -79,7 +80,7 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
       }
   
       const listaUsuarios = Object.entries(usuarios).map(([uid, user]) => (
-        • ${user.nombre} (${user.email})\nRegistrado: ${new Date(user.fechaRegistro).toLocaleDateString()}
+        `- ${user.nombre} (${user.email})\nRegistrado: ${new Date(user.fechaRegistro).toLocaleDateString()}`
       )).join('\n\n');
   
       Alert.alert(
@@ -225,7 +226,14 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
               <Text style={styles.subtitulo}>No tienes medicamentos registrados</Text>
             </View>
           )} */}
-
+          
+          <View style={styles.contenedorBotones}>
+  <View style={styles.botonContainer}>
+    <Button
+      title="Subir Información"
+      onPress={() => setScreen('Subirinformacion')} // Cambia la pantalla a 'SubirInformacion'
+      color="#6200ee"
+              />
           <View style={styles.contenedorBotones}>
             <View style={styles.botonContainer}>
               <Button
@@ -235,6 +243,8 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
               />
             </View>
             <View style={styles.botonContainer}>
+            </View>
+            </View>
             </View>
           </View>
         </View>
