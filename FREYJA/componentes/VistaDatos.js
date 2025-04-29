@@ -100,10 +100,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#F0F8FF' 
+    backgroundColor: 'rgba(171, 163, 247, 0.89)' 
   },
   datosContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: '#6200EE',
     padding: 20,
     borderRadius: 10,
     width: '80%',
@@ -119,15 +119,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 10,
-    color: '#2E4053'
+    color:'#F0F8FF' 
   },
   dato: {
     fontSize: 16,
     marginBottom: 10,
-    color: '#333'
+    color: '#F0F8FF' 
   },
   userId: {
-    color: '#1E88E5',
+    color: '#F0F8FF' ,
     fontWeight: 'bold'
   },
   loadingContainer: {

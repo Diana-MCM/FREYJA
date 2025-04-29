@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { getDatabase, ref, onValue, remove } from 'firebase/database';
+import { getDatabase, ref, query, orderByChild, equalTo, get, update,onValue,remove  } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -11,33 +11,55 @@ const Notificaciones = ({ setScreen }) => {
   useEffect(() => {
     const auth = getAuth();
     const user = auth.currentUser;
-
+  
     if (!user) {
       Alert.alert("Error", "Debes iniciar sesión primero");
       setLoading(false);
       return;
     }
-
+  
     const db = getDatabase();
     const notificacionesRef = ref(db, `usuarios/${user.uid}/notificaciones`);
-
     const unsubscribe = onValue(notificacionesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const listaNotificaciones = Object.keys(data).map((key) => ({
+        const notifs = Object.keys(data).map((key) => ({
           id: key,
           ...data[key],
         }));
-        setNotificaciones(listaNotificaciones);
+        setNotificaciones(notifs);
       } else {
         setNotificaciones([]);
       }
+    });
+    // Verificar si el nodo existe y crearlo si no
+    get(notificacionesRef).then((snapshot) => {
+      if (!snapshot.exists()) {
+        return update(ref(db, `usuarios/${user.uid}/notificaciones`), {});
+      }
+    }).then(() => {
+      // Suscribirse a cambios
+      const unsubscribe = onValue(notificacionesRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const notifs = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+          }));
+          setNotificaciones(notifs);
+        } else {
+          setNotificaciones([]);
+        }
+        setLoading(false);
+      });
+  
+      return () => unsubscribe();
+    }).catch(error => {
+      console.error("Error:", error);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
-
   const eliminarNotificacion = async (id) => {
     try {
       const auth = getAuth();
@@ -172,7 +194,7 @@ const styles = StyleSheet.create({
   },
   botonVolver: {
     marginTop: 20,
-    backgroundColor: '#A89CC8',
+    backgroundColor: '#6200EE',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
