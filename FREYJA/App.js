@@ -12,9 +12,9 @@ import { auth } from './firebase/firebase';
 import { signOut } from 'firebase/auth';
 import Notificaciones from './componentes/Notificaciones';
 import SolicitudesAmistad from './componentes/SolicitudesAmistad';
-import * as Notifications from 'expo-notifications';
-import { useEffect } from 'react';
-import { inicializarEstructuraNotificaciones } from './componentes/FirebaseUtils';
+import Subirinformacion from './componentes/Subirinformacion';
+import Carpetas from './componentes/Carpetas';
+
 
 const IniciarSesion = ({ setScreen, setNombreUsuario }) => { 
   const [email, setEmail] = useState('');
@@ -54,7 +54,7 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
       setLoading(false);
     }
   };
-  
+
   return (
     <View style={{ 
       flex: 1, 
@@ -112,25 +112,16 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
 
 export default function App() {
   const [screen, setScreen] = useState('IniciarSesion');
+  const [screenParams, setScreenParams] = useState(null);
   const [nombreUsuario, setNombreUsuario] = useState('');
   //const [showMedicamentos, setShowMedicamentos] = useState(false);
   //const [listaMedicamentos, setListaMedicamentos] = useState([]);
-  useEffect(() => {
-    const configureNotifications = async () => {
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') {
-        await Notifications.requestPermissionsAsync();
-      }
-    };
-    Notifications.setNotificationHandler({
-     handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-     }),
-    });
-    configureNotifications();
-  }, []);
+  const handleSetScreen = (screen, params = null) => {
+    console.log('setScreen llamado con:', { screen, params });
+    setScreen(screen);
+    setScreenParams(params);
+  };
+  
   const cerrarSesion = async () => {
     try {
       await signOut(auth);
@@ -145,7 +136,7 @@ export default function App() {
     <View style={{ flex: 1 }}>
       {screen === 'Inicio' && (
         <PantallaInicio 
-          setScreen={setScreen} 
+          setScreen={handleSetScreen} 
           nombreUsuario={nombreUsuario}
           cerrarSesion={cerrarSesion}
           //listaMedicamentos={listaMedicamentos}
@@ -154,58 +145,72 @@ export default function App() {
       )}
       {screen === 'IniciarSesion' && (
         <IniciarSesion 
-          setScreen={setScreen} 
+          setScreen={handleSetScreen} 
           setNombreUsuario={setNombreUsuario} 
         />
       )}
       {screen === 'RegistroDeUsuario' && (
         <RegistroDeUsuario 
-          setScreen={setScreen} 
+          setScreen={handleSetScreen} 
           setNombreUsuario={setNombreUsuario} 
         />
       )}
       {screen === 'DatosPersonales' && (
         <DatosPersonales 
-          setScreen={setScreen}
+          setScreen={handleSetScreen}
           nombreUsuario={nombreUsuario}
         />
       )}
       {screen === 'VistaDatos' && (
         <VistaDatos 
-          setScreen={setScreen} 
+          setScreen={handleSetScreen} 
           nombreUsuario={nombreUsuario} 
         />
       )}
       {screen === 'Calendario' && (
         <Calendario 
-          setScreen={setScreen} 
+          setScreen={handleSetScreen} 
           nombreUsuario={nombreUsuario} 
         />
       )}
       {screen === 'Busqueda' && (
         <Busqueda
-          setScreen={setScreen} 
+          setScreen={handleSetScreen} 
           nombreUsuario={nombreUsuario} 
         />
       )}
       {screen === 'ListaAmigos' && (
         <ListaAmigos
-          setScreen={setScreen} 
+          setScreen={handleSetScreen} 
           nombreUsuario={nombreUsuario} 
         />
       )}
       {screen === 'Notificaciones' && (
         <Notificaciones 
-          setScreen={setScreen} 
+          setScreen={handleSetScreen} 
           nombreUsuario={nombreUsuario} 
         />
       )}
       {screen === 'SolicitudesAmistad' && (
         <SolicitudesAmistad
-          setScreen={setScreen} 
+          setScreen={handleSetScreen} 
           nombreUsuario={nombreUsuario} 
         />
       )}
+      {screen === 'Subirinformacion' && (
+        <Subirinformacion
+          setScreen={handleSetScreen} 
+          nombreUsuario={nombreUsuario} 
+        />
+      )}
+      {screen === 'Carpetas' && (
+        <Carpetas
+          setScreen={handleSetScreen} 
+          nombreUsuario={nombreUsuario}
+          params={screenParams} 
+        />
+      )}
+
     </View>
   );
 }
