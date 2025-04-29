@@ -107,9 +107,23 @@ const BuscarAmigos = ({ setScreen }) => {
         userId: userData.userId,
         fechaSolicitud: new Date().toISOString()
       };
-
-      await update(ref(db), updates);
       
+      
+      const notificacionId = Date.now().toString();
+      updates[`usuarios/${amigoEncontrado.id}/notificaciones/${notificacionId}`] = {
+        titulo: "Nueva solicitud de amistad",
+        mensaje: `${userData.nombre} te ha enviado una solicitud de amistad`,
+        fecha: new Date().toISOString(),
+        tipo: "solicitud_amistad",
+        userIdOrigen: user.uid,
+        leida: false,
+        metadata: {
+          action: "friendship_request",
+          solicitudId: user.uid
+        }, 
+      };
+      await update(ref(db), updates);
+
       Alert.alert("¡Éxito!", `Solicitud enviada a ${amigoEncontrado.nombre}`);
       setAmigoEncontrado(null);
       setUserIdBusqueda('');

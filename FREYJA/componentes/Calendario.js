@@ -1,20 +1,6 @@
 // componentes/Calendario.js
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  TextInput, 
-  Button, 
-  Modal, 
-  Keyboard,
-  TouchableWithoutFeedback,
-  ScrollView,
-  Platform,
-  SafeAreaView,
-  Alert
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Button, Modal, Keyboard,TouchableWithoutFeedback,ScrollView,Platform,SafeAreaView,Alert} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ref, get, set, remove } from 'firebase/database';
 import { auth, db } from '../firebase/firebase';
@@ -480,7 +466,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#A89CC8', 
+    backgroundColor: 'rgba(172, 163, 247, 0.89)',
   },
   dayNamesContainer: {
     flexDirection: 'row',
