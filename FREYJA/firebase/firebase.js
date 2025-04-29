@@ -29,4 +29,4 @@ const auth = initializeAuth(app, {
 });
 
 const db = getDatabase(app);
-export { auth, db };
+export { auth, db };
