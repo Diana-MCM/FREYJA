@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Button, TextInput, Alert } from 'react-native';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword,  onAuthStateChanged } from 'firebase/auth';
 import PantallaInicio from './componentes/iniciarsesion';
 import RegistroDeUsuario from './componentes/RegistroDeUsuario';
 import DatosPersonales from './componentes/DatosPersonales';
@@ -15,8 +15,14 @@ import SolicitudesAmistad from './componentes/SolicitudesAmistad';
 import Subirinformacion from './componentes/Subirinformacion';
 import Carpetas from './componentes/Carpetas';
 
+// Añadimos un componente de carga inicial
+const LoadingScreen = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#A89CC8' }}>
+    <Text>Cargando aplicación...</Text>
+  </View>
+);
 
-const IniciarSesion = ({ setScreen, setNombreUsuario }) => { 
+const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,10 +35,8 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
 
     setLoading(true);
     try {
-      const auth = getAuth();
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Obtener el nombre del usuario desde Firebase
       const user = userCredential.user;
       const nombre = user.displayName || email.split('@')[0];
       
@@ -114,8 +118,20 @@ export default function App() {
   const [screen, setScreen] = useState('IniciarSesion');
   const [screenParams, setScreenParams] = useState(null);
   const [nombreUsuario, setNombreUsuario] = useState('');
-  //const [showMedicamentos, setShowMedicamentos] = useState(false);
-  //const [listaMedicamentos, setListaMedicamentos] = useState([]);
+  const [appReady, setAppReady] = useState(false);
+
+  // Añadimos efecto para esperar inicialización de Firebase
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseReady(true);
+      if (user) {
+        setNombreUsuario(user.displayName || user.email?.split('@')[0] || 'Usuario');
+      }
+    });
+    return unsubscribe;
+  }, []);
+
   const handleSetScreen = (screen, params = null) => {
     console.log('setScreen llamado con:', { screen, params });
     setScreen(screen);
@@ -132,6 +148,20 @@ export default function App() {
       Alert.alert("Error", "No se pudo cerrar la sesión");
     }
   };
+
+  if (!firebaseReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Cargando aplicación...</Text>
+      </View>
+    );
+  }
+
+  // Mostramos pantalla de carga hasta que Firebase esté listo
+  if (!appReady) {
+    return <LoadingScreen />;
+  }
+
   return (
     <View style={{ flex: 1 }}>
       {screen === 'Inicio' && (
@@ -139,8 +169,6 @@ export default function App() {
           setScreen={handleSetScreen} 
           nombreUsuario={nombreUsuario}
           cerrarSesion={cerrarSesion}
-          //listaMedicamentos={listaMedicamentos}
-          //onShowMedicamentos={() => setShowMedicamentos(true)}
         />
       )}
       {screen === 'IniciarSesion' && (
@@ -210,7 +238,6 @@ export default function App() {
           params={screenParams} 
         />
       )}
-
     </View>
   );
 }
