@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, TextInput, Alert } from 'react-native';
-import { getAuth, signInWithEmailAndPassword,  onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import PantallaInicio from './componentes/iniciarsesion';
 import RegistroDeUsuario from './componentes/RegistroDeUsuario';
 import DatosPersonales from './componentes/DatosPersonales';
@@ -9,13 +9,12 @@ import Busqueda from './componentes/Busqueda';
 import ListaAmigos from './componentes/ListaAmigos';
 import Calendario from './componentes/Calendario';
 import { auth } from './firebase/firebase';
-import { signOut } from 'firebase/auth';
 import Notificaciones from './componentes/Notificaciones';
 import SolicitudesAmistad from './componentes/SolicitudesAmistad';
 import Subirinformacion from './componentes/Subirinformacion';
 import Carpetas from './componentes/Carpetas';
 
-// Añadimos un componente de carga inicial
+// Componente de carga inicial
 const LoadingScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#A89CC8' }}>
     <Text>Cargando aplicación...</Text>
@@ -120,15 +119,22 @@ export default function App() {
   const [nombreUsuario, setNombreUsuario] = useState('');
   const [appReady, setAppReady] = useState(false);
 
-  // Añadimos efecto para esperar inicialización de Firebase
+  // Efecto para inicialización de Firebase y autenticación
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setFirebaseReady(true);
+      // Marcar la aplicación como lista
+      setAppReady(true);
+      
       if (user) {
         setNombreUsuario(user.displayName || user.email?.split('@')[0] || 'Usuario');
+        setScreen('Inicio');
+      } else {
+        setScreen('IniciarSesion');
       }
     });
+    
+    // Limpieza al desmontar
     return unsubscribe;
   }, []);
 
@@ -149,15 +155,7 @@ export default function App() {
     }
   };
 
-  if (!firebaseReady) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Cargando aplicación...</Text>
-      </View>
-    );
-  }
-
-  // Mostramos pantalla de carga hasta que Firebase esté listo
+  // Mostrar pantalla de carga hasta que la app esté lista
   if (!appReady) {
     return <LoadingScreen />;
   }
