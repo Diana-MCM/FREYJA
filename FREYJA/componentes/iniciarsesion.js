@@ -51,7 +51,7 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
 
     if (!user) {
       console.error("Usuario no autenticado");
-      return;
+      return () => {};
     }
 
     const db = getDatabase();
@@ -80,7 +80,10 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
       }
   
       const listaUsuarios = Object.entries(usuarios).map(([uid, user]) => (
+
         `- ${user.nombre} (${user.email})\nRegistrado: ${new Date(user.fechaRegistro).toLocaleDateString()}`
+        `• ${user.nombre} (${user.email})\nRegistrado: ${new Date(user.fechaRegistro).toLocaleDateString()}`
+
       )).join('\n\n');
   
       Alert.alert(

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Button, TextInput, Alert } from 'react-native';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import PantallaInicio from './componentes/iniciarsesion';
 import RegistroDeUsuario from './componentes/RegistroDeUsuario';
 import DatosPersonales from './componentes/DatosPersonales';
@@ -9,14 +9,19 @@ import Busqueda from './componentes/Busqueda';
 import ListaAmigos from './componentes/ListaAmigos';
 import Calendario from './componentes/Calendario';
 import { auth } from './firebase/firebase';
-import { signOut } from 'firebase/auth';
 import Notificaciones from './componentes/Notificaciones';
 import SolicitudesAmistad from './componentes/SolicitudesAmistad';
 import Subirinformacion from './componentes/Subirinformacion';
 import Carpetas from './componentes/Carpetas';
 
+// Componente de carga inicial
+const LoadingScreen = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#A89CC8' }}>
+    <Text>Cargando aplicación...</Text>
+  </View>
+);
 
-const IniciarSesion = ({ setScreen, setNombreUsuario }) => { 
+const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,10 +34,8 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
 
     setLoading(true);
     try {
-      const auth = getAuth();
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Obtener el nombre del usuario desde Firebase
       const user = userCredential.user;
       const nombre = user.displayName || email.split('@')[0];
       
@@ -114,8 +117,27 @@ export default function App() {
   const [screen, setScreen] = useState('IniciarSesion');
   const [screenParams, setScreenParams] = useState(null);
   const [nombreUsuario, setNombreUsuario] = useState('');
-  //const [showMedicamentos, setShowMedicamentos] = useState(false);
-  //const [listaMedicamentos, setListaMedicamentos] = useState([]);
+  const [appReady, setAppReady] = useState(false);
+
+  // Efecto para inicialización de Firebase y autenticación
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      // Marcar la aplicación como lista
+      setAppReady(true);
+      
+      if (user) {
+        setNombreUsuario(user.displayName || user.email?.split('@')[0] || 'Usuario');
+        setScreen('Inicio');
+      } else {
+        setScreen('IniciarSesion');
+      }
+    });
+    
+    // Limpieza al desmontar
+    return unsubscribe;
+  }, []);
+
   const handleSetScreen = (screen, params = null) => {
     console.log('setScreen llamado con:', { screen, params });
     setScreen(screen);
@@ -132,6 +154,12 @@ export default function App() {
       Alert.alert("Error", "No se pudo cerrar la sesión");
     }
   };
+
+  // Mostrar pantalla de carga hasta que la app esté lista
+  if (!appReady) {
+    return <LoadingScreen />;
+  }
+
   return (
     <View style={{ flex: 1 }}>
       {screen === 'Inicio' && (
@@ -139,8 +167,6 @@ export default function App() {
           setScreen={handleSetScreen} 
           nombreUsuario={nombreUsuario}
           cerrarSesion={cerrarSesion}
-          //listaMedicamentos={listaMedicamentos}
-          //onShowMedicamentos={() => setShowMedicamentos(true)}
         />
       )}
       {screen === 'IniciarSesion' && (
@@ -210,7 +236,6 @@ export default function App() {
           params={screenParams} 
         />
       )}
-
     </View>
   );
 }
