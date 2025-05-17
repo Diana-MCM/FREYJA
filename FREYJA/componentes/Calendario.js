@@ -1,7 +1,8 @@
 // componentes/Calendario.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Button, Modal, Keyboard,TouchableWithoutFeedback,ScrollView,Platform,SafeAreaView,Alert} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Button, Modal, Keyboard, TouchableWithoutFeedback, ScrollView, Platform, SafeAreaView, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
 import { ref, get, set, remove } from 'firebase/database';
 import { auth, db } from '../firebase/firebase';
 import * as Notifications from 'expo-notifications';
@@ -18,6 +19,17 @@ const setupNotifications = async () => {
   });
 };
 
+// Opciones de recordatorio
+const reminderOptions = [
+  { label: 'No recordatorio', value: 'none' },
+  { label: '30 minutos antes', value: '30 minutes' },
+  { label: '1 hora antes', value: '1 hour' },
+  { label: '3 horas antes', value: '3 hours' },
+  { label: '6 horas antes', value: '6 hours' },
+  { label: '1 día antes', value: '1 day' },
+  { label: '2 días antes', value: '2 days' },
+];
+
 const Calendario = ({ setScreen, nombreUsuario }) => {
   // Estados del componente
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -29,7 +41,8 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
     title: '',
     time: new Date(),
     description: '',
-    reminder: true
+    reminder: true,
+    reminderTime: '1 day' // Nueva propiedad para el tiempo de recordatorio
   });
 
   // Formatear fecha como YYYY-MM-DD
@@ -92,30 +105,52 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
     }
   };
 
-  // Programar notificación
-  const scheduleNotification = async (appointmentDate, title) => {
+  // Programar notificación con tiempo personalizado
+  const scheduleNotification = async (appointmentDate, title, reminderTime) => {
     try {
-      const reminderDate = new Date(appointmentDate);
-      reminderDate.setDate(reminderDate.getDate() - 1); // Notificar 1 día antes
+      const now = new Date();
+      const appointment = new Date(appointmentDate);
+      const reminderDate = new Date(appointment);
+      
+      // Calcular el recordatorio según la opción seleccionada
+      const [value, unit] = reminderTime.split(' ');
+      
+      if (unit === 'minutes') {
+        reminderDate.setMinutes(appointment.getMinutes() - parseInt(value));
+      } else if (unit === 'hour' || unit === 'hours') {
+        reminderDate.setHours(appointment.getHours() - parseInt(value));
+      } else if (unit === 'day' || unit === 'days') {
+        reminderDate.setDate(appointment.getDate() - parseInt(value));
+      }
+      
+      // Verificar que el recordatorio sea en el futuro
+      if (reminderDate <= now) {
+        console.log("El recordatorio sería en el pasado");
+        Alert.alert("Recordatorio no programado", "La hora del recordatorio ya pasó");
+        return;
+      }
       
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Recordatorio de cita",
-          body: `Tienes una cita mañana: ${title}`,
+          body: `Próxima cita: ${title} (en ${reminderTime})`,
           data: { url: 'freyja://calendar' },
         },
         trigger: {
           date: reminderDate,
         },
       });
+      
+      console.log(`Notificación programada para: ${reminderDate}`);
     } catch (error) {
-      console.error("Error scheduling notification:", error);
+      console.error("Error programando notificación:", error);
+      Alert.alert("Error", "No se pudo programar el recordatorio");
     }
   };
 
   // Cargar citas al montar el componente
   useEffect(() => {
-    setupNotifications(); // Agregar esta línea
+    setupNotifications();
     
     const fetchAppointments = async () => {
       const userId = auth.currentUser?.uid;
@@ -168,19 +203,16 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
   
-    // Ajustar para que la semana comience en Lunes (0=Lunes, 6=Domingo)
     let firstDayOfWeek = firstDay.getDay() - 1;
-    if (firstDayOfWeek < 0) firstDayOfWeek = 6; // Si es Domingo (0-1=-1), lo convertimos a 6
+    if (firstDayOfWeek < 0) firstDayOfWeek = 6;
   
     const days = [];
     const totalDays = lastDay.getDate();
   
-    // Crear celdas vacías al inicio
     for (let i = 0; i < firstDayOfWeek; i++) {
       days.push(<View key={`empty-start-${i}`} style={styles.emptyDay} />);
     }
   
-    // Crear celdas para los días del mes
     for (let day = 1; day <= totalDays; day++) {
       const date = new Date(year, month, day);
       const dateKey = formatDateKey(date);
@@ -196,7 +228,8 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
               title: '',
               time: new Date(date.setHours(12, 0)),
               description: '',
-              reminder: true
+              reminder: true,
+              reminderTime: '1 day'
             });
             setModalVisible(true);
           }}
@@ -211,13 +244,11 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
       );
     }
   
-    // Crear celdas vacías al final
     const remainingCells = (7 - (days.length % 7)) % 7;
     for (let i = 0; i < remainingCells; i++) {
       days.push(<View key={`empty-end-${i}`} style={styles.emptyDay} />);
     }
   
-    // Dividir los días en filas de 7 días
     const rows = [];
     for (let i = 0; i < days.length; i += 7) {
       rows.push(
@@ -274,11 +305,11 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
       // Guardar en Firebase
       await saveAppointmentToFirebase(userId, selectedDate, appointmentWithTime);
 
-      // Programar notificación si está activado
-      if (newAppointment.reminder) {
+      // Programar notificación si está activado y no es "none"
+      if (newAppointment.reminder && newAppointment.reminderTime !== 'none') {
         const appointmentDate = new Date(selectedDate);
         appointmentDate.setHours(newAppointment.time.getHours(), newAppointment.time.getMinutes());
-        await scheduleNotification(appointmentDate, newAppointment.title);
+        await scheduleNotification(appointmentDate, newAppointment.title, newAppointment.reminderTime);
       }
 
       setModalVisible(false);
@@ -312,135 +343,134 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
 
       // Eliminar de Firebase
       await deleteAppointmentFromFirebase(userId, dateKey, appointmentId);
-
-      // Cancelar notificación (si se implementara)
-      // await cancelNotification(appointmentId);
     } catch (error) {
       Alert.alert("Error", "Ocurrió un error al eliminar la cita");
       console.error("Error deleting appointment:", error);
     }
   };
 
-  // Renderizar modal de citas
-  const renderAppointmentsModal = () => {
-    const dayAppointments = selectedDate ? (appointments[selectedDate] || []) : [];
-    
-    return (
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(false);
-          Keyboard.dismiss();
-        }}
+  // Renderizar selector de recordatorios
+  const renderReminderPicker = () => (
+  <View style={styles.reminderContainer}>
+    <Text style={styles.reminderLabel}>Recordatorio:</Text>
+    <View style={styles.pickerContainer}>
+      <Picker
+        selectedValue={newAppointment.reminderTime}
+        onValueChange={(itemValue) => 
+          setNewAppointment({...newAppointment, reminderTime: itemValue})
+        }
+        style={styles.picker}
+        dropdownIconColor="#A89CC8"
+        mode="dropdown" // Esto hace que en Android se vea como un dropdown
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <SafeAreaView style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Citas para el {selectedDate}</Text>
-              
+        {reminderOptions.map(option => (
+          <Picker.Item 
+            key={option.value} 
+            label={option.label} 
+            value={option.value} 
+          />
+        ))}
+      </Picker>
+    </View>
+  </View>
+);
+  // Renderizar modal de citas
+const renderAppointmentsModal = () => {
+  const dayAppointments = selectedDate ? (appointments[selectedDate] || []) : [];
+  
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={modalVisible}
+      onRequestClose={() => {
+        setModalVisible(false);
+        Keyboard.dismiss();
+      }}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Citas para el {selectedDate}</Text>
+            
+            <ScrollView style={styles.scrollContainer}>
               {/* Lista de citas existentes */}
-              <ScrollView style={styles.appointmentsListContainer}>
-                {dayAppointments.map((item) => (
-                  <View key={item.id} style={styles.appointmentItem}>
-                    <View style={styles.appointmentHeader}>
-                      <Text style={styles.appointmentTime}>{item.timeString}</Text>
-                      <Text style={styles.appointmentTitle}>{item.title}</Text>
-                      <TouchableOpacity 
-                        style={styles.deleteButton}
-                        onPress={() => deleteAppointment(selectedDate, item.id)}
-                      >
-                        <Text style={styles.deleteButtonText}>X</Text>
-                      </TouchableOpacity>
-                    </View>
-                    {item.description && (
-                      <Text style={styles.appointmentDescription}>{item.description}</Text>
-                    )}
-                    <Text style={styles.reminderText}>
-                      {item.reminder ? 'Recordatorio activado' : 'Sin recordatorio'}
-                    </Text>
+              {dayAppointments.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Citas Programadas</Text>
+                  <View style={styles.appointmentsListContainer}>
+                    {dayAppointments.map((item) => (
+                      <View key={item.id} style={styles.appointmentItem}>
+                        {/* ... contenido existente ... */}
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </ScrollView>
+                </>
+              )}
               
-              <Text style={styles.sectionTitle}>Agregar Nueva Cita</Text>
+              <Text style={styles.sectionTitle}>Agregar Nueva recordatorio</Text>
               
-              <ScrollView 
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.scrollContent}
+              <TextInput
+                style={styles.input}
+                placeholder="Título del recordatorio*"
+                value={newAppointment.title}
+                onChangeText={(text) => setNewAppointment({...newAppointment, title: text})}
+              />
+              
+              <TouchableOpacity 
+                style={styles.timePickerButton}
+                onPress={() => setShowTimePicker(true)}
               >
-                <TextInput
-                  style={styles.input}
-                  placeholder="Título de la cita*"
-                  value={newAppointment.title}
-                  onChangeText={(text) => setNewAppointment({...newAppointment, title: text})}
-                  returnKeyType="next"
-                />
-                
-                <TouchableOpacity 
-                  style={styles.timePickerButton}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    setShowTimePicker(true);
-                  }}
-                >
-                  <Text>Hora: {formatTime(newAppointment.time)}</Text>
-                </TouchableOpacity>
-                
-                {showTimePicker && (
+                <Text>Hora: {formatTime(newAppointment.time)}</Text>
+              </TouchableOpacity>
+              
+              {showTimePicker && (
+                <View style={styles.timePickerContainer}>
                   <DateTimePicker
                     value={newAppointment.time}
                     mode="time"
-                    display="default"
+                    display={Platform.OS === 'ios' ? 'inline' : 'spinner'}
                     onChange={handleTimeChange}
                   />
-                )}
-                
-                <TextInput
-                  style={[styles.input, styles.multilineInput]}
-                  placeholder="Descripción (opcional)"
-                  value={newAppointment.description}
-                  onChangeText={(text) => setNewAppointment({...newAppointment, description: text})}
-                  multiline
-                  blurOnSubmit={true}
-                />
-                
-                <View style={styles.reminderContainer}>
-                  <Text style={styles.reminderLabel}>Recordatorio 1 día antes:</Text>
-                  <TouchableOpacity
-                    onPress={() => setNewAppointment({...newAppointment, reminder: !newAppointment.reminder})}
-                    style={styles.reminderToggle}
-                  >
-                    <View style={[
-                      styles.toggleCircle,
-                      newAppointment.reminder ? styles.toggleOn : styles.toggleOff
-                    ]} />
-                  </TouchableOpacity>
+                  {Platform.OS === 'ios' && (
+                    <Button 
+                      title="Seleccionar" 
+                      onPress={() => setShowTimePicker(false)} 
+                      color="#A89CC8"
+                    />
+                  )}
                 </View>
-              </ScrollView>
+              )}
               
-              <View style={styles.modalButtons}>
-                <Button 
-                  title="Guardar Cita" 
-                  onPress={saveAppointment} 
-                  color="#A89CC8"
-                />
-                <Button 
-                  title="Cerrar" 
-                  onPress={() => {
-                    setModalVisible(false);
-                    Keyboard.dismiss();
-                  }} 
-                  color="#999"
-                />
-              </View>
+              <TextInput
+                style={[styles.input, styles.multilineInput]}
+                placeholder="Descripción (opcional)"
+                value={newAppointment.description}
+                onChangeText={(text) => setNewAppointment({...newAppointment, description: text})}
+                multiline
+              />
+              
+              {renderReminderPicker()}
+            </ScrollView>
+            
+            <View style={styles.modalButtons}>
+              <Button 
+                title="Guardar Cita" 
+                onPress={saveAppointment} 
+                color="#A89CC8"
+              />
+              <Button 
+                title="Cerrar" 
+                onPress={() => setModalVisible(false)} 
+                color="#999"
+              />
             </View>
-          </SafeAreaView>
-        </TouchableWithoutFeedback>
-      </Modal>
-    );
-  };
+          </View>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
+};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -540,50 +570,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  dayNames: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 10,
-  },
-  dayName: {
-    width: 40,
-    textAlign: 'center',
-    fontWeight: 'bold',
-    color: '#555',
-  },
   daysContainer: {
     flexDirection: 'column',
     marginTop: 10,
-  },
-  weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  day: {
-    width: '13%', // Ajusta para que quepan 7 días en una fila
-    aspectRatio: 1, // Hace que las celdas sean cuadradas
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 5,
-    margin: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1,
-    elevation: 2,
-  },
-  emptyDay: {
-    width: '13%',
-    aspectRatio: 1,
-    margin: 2,
-    backgroundColor: 'transparent',
-  },
-  dayNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
   },
   appointmentIndicator: {
     position: 'absolute',
@@ -602,17 +591,51 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    width: '90%',
-    backgroundColor: '#FFF',
-    borderRadius: 10,
-    maxHeight: '80%',
-  },
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(0,0,0,0.5)',
+ },
+ modalContent: {
+  backgroundColor: '#FFF',
+  borderRadius: 10,
+  width: '90%',
+  maxHeight: '80%',
+  padding: 20,
+  margin: 20,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 4,
+  elevation: 5,
+},
+  reminderContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 15,
+  paddingHorizontal: 5,
+},
+pickerWrapper: {
+  flex: 2,
+  borderWidth: 1,
+  borderColor: '#CCC',
+  borderRadius: 5,
+  overflow: 'hidden', // Importante para contener el Picker
+},
+reminderPicker: {
+  width: '100%',
+  height: 50,
+  backgroundColor: '#FFF',
+},
+timePickerContainer: {
+  marginVertical: 10,
+  backgroundColor: '#FFF',
+  borderRadius: 5,
+  padding: Platform.OS === 'ios' ? 10 : 0,
+},
+timePicker: {
+  width: '100%',
+},
   scrollContent: {
     paddingHorizontal: 10,
   },
@@ -706,31 +729,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 15,
+    paddingHorizontal: 10,
   },
   reminderLabel: {
     flex: 1,
     color: '#555',
+    fontSize: 16,
   },
-  reminderToggle: {
-    width: 50,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#E0E0E0',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-  },
-  toggleCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  reminderPicker: {
+    flex: 2,
+    height: 50,
     backgroundColor: '#FFF',
-  },
-  toggleOn: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#A89CC8',
-  },
-  toggleOff: {
-    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#CCC',
+    borderRadius: 5,
   },
   modalButtons: {
     flexDirection: 'row',

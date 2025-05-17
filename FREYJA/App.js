@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput, Alert } from 'react-native';
+import { View, Text, Button, TextInput, Alert,ImageBackground} from 'react-native';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import PantallaInicio from './componentes/iniciarsesion';
 import RegistroDeUsuario from './componentes/RegistroDeUsuario';
@@ -13,6 +13,10 @@ import Notificaciones from './componentes/Notificaciones';
 import SolicitudesAmistad from './componentes/SolicitudesAmistad';
 import Subirinformacion from './componentes/Subirinformacion';
 import Carpetas from './componentes/Carpetas';
+import GestionMedicamentos from './componentes/GestionMedicamentos';
+import imagenFondo from './assets/Freyja.png';
+import Encuestas from './componentes/Encuestas';
+import Chequeo from './componentes/Chequeo';
 
 // Componente de carga inicial
 const LoadingScreen = () => (
@@ -59,17 +63,22 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
   };
 
   return (
+   <ImageBackground 
+      source={imagenFondo}
+      style={{ flex: 1, width: '100%', height: '100%' }}
+      resizeMode="cover"
+    >
     <View style={{ 
       flex: 1, 
       justifyContent: 'center', 
       alignItems: 'center', 
-      backgroundColor: '#A89CC8'
+      backgroundColor: 'rgba(234, 231, 241, 0.29)'
     }}>
       <Text style={{ fontSize: 30, fontWeight: 'bold', marginBottom: 10 }}>BIENVENIDO A FREYJA</Text>
-      <Text style={{ fontSize: 15, marginBottom: 10, fontFamily: 'Courier New', textAlign: 'center' }}>
+      <Text style={{ fontSize: 20, marginBottom: 10, textAlign: 'center' }}>
         Si ya cuenta con una cuenta, por favor inicie sesión.
       </Text>
-      <Text style={{ fontSize: 15, marginBottom: 10, fontFamily: 'Courier New', textAlign: 'center' }}>
+      <Text style={{ fontSize: 20, marginBottom: 10, textAlign: 'center' }}>
         En caso de que no, por favor regístrese para entrar.
       </Text>
       <TextInput
@@ -110,6 +119,7 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
         disabled={loading}
       />
     </View>
+    </ImageBackground>
   );
 };
 
@@ -118,26 +128,25 @@ export default function App() {
   const [screenParams, setScreenParams] = useState(null);
   const [nombreUsuario, setNombreUsuario] = useState('');
   const [appReady, setAppReady] = useState(false);
+  const [userId, setUserId] = useState(null);
 
-  // Efecto para inicialización de Firebase y autenticación
-  useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // Marcar la aplicación como lista
-      setAppReady(true);
-      
-      if (user) {
-        setNombreUsuario(user.displayName || user.email?.split('@')[0] || 'Usuario');
-        setScreen('Inicio');
-      } else {
-        setScreen('IniciarSesion');
-      }
-    });
-    
-    // Limpieza al desmontar
-    return unsubscribe;
-  }, []);
+useEffect(() => {
+  const auth = getAuth();
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    setAppReady(true);
 
+    if (user) {
+      setNombreUsuario(user.displayName || user.email?.split('@')[0] || 'Usuario');
+      setUserId(user.uid); // <-- aquí
+      setScreen('Inicio');
+    } else {
+      setUserId(null); // <-- aquí
+      setScreen('IniciarSesion');
+    }
+  });
+
+  return unsubscribe;
+}, []);
   const handleSetScreen = (screen, params = null) => {
     console.log('setScreen llamado con:', { screen, params });
     setScreen(screen);
@@ -211,6 +220,18 @@ export default function App() {
           nombreUsuario={nombreUsuario} 
         />
       )}
+      {screen === 'Encuestas' && (
+        <Encuestas 
+        setScreen={handleSetScreen} 
+        nombreUsuario={nombreUsuario} 
+        userId={userId} />
+      )}
+      {screen === 'Chequeo' && (
+        <Chequeo
+        setScreen={handleSetScreen} 
+        nombreUsuario={nombreUsuario} 
+        userId={userId} />
+      )}
       {screen === 'Notificaciones' && (
         <Notificaciones 
           setScreen={handleSetScreen} 
@@ -236,6 +257,14 @@ export default function App() {
           params={screenParams} 
         />
       )}
+      {screen === 'GestionMedicamentos' && (
+        <GestionMedicamentos
+          setScreen={handleSetScreen} 
+          nombreUsuario={nombreUsuario}
+          params={screenParams} 
+        />
+      )}
     </View>
+    
   );
 }

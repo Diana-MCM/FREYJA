@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Button, Alert, StyleSheet, TouchableOpacity,ImageBackground } from 'react-native';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { auth } from '../firebase/firebase';
-import {Modal} from 'react-native';
+import Modal from "react-native-modal";
 import { onValue } from 'firebase/database';
 import Subirinformacion from './Subirinformacion';
-//import GestionMedicamentos from './GestionMedicamentos';
+import GestionMedicamentos from './GestionMedicamentos';
+import imagenFondo from './imagenes/Freyjaa.png';
 
 const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
   const [modalVisible, setModalVisible] = useState(false); // Estado para controlar el modal
@@ -17,35 +18,36 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
   const [numeroNotificaciones, setNumeroNotificaciones] = useState(0);
 
   // Comentado todo lo relacionado con medicamentos
-  // const [showMedicamentos, setShowMedicamentos] = useState(false);
-  // const [listaMedicamentos, setListaMedicamentos] = useState([]);
+  const [showMedicamentos, setShowMedicamentos] = useState(false);
+  const [listaMedicamentos, setListaMedicamentos] = useState([]);
 
-  // const cargarMedicamentos = async () => {
-  //   try {
-  //     const auth = getAuth();
-  //     const user = auth.currentUser;
+  const cargarMedicamentos = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
       
-  //     if (user) {
-  //       const db = getDatabase();
-  //       const snapshot = await get(ref(db, usuarios/${user.uid}/medicamentos));
+      if (user) {
+        const db = getDatabase();
+        const snapshot = await get(ref(db, `usuarios/${user.uid}/medicamentos`)); 
         
-  //       if (snapshot.exists()) {
-  //         const medicamentosData = snapshot.val();
-          
-  //         const medicamentosArray = Object.keys(medicamentosData).map(key => ({
-  //           id: key,
-  //           ...medicamentosData[key]
-  //         }));
-  //         setListaMedicamentos(medicamentosArray);
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Error al cargar medicamentos:", error);
-  //   }
-  // };
+        if (snapshot.exists()) {
+          const medicamentosData = snapshot.val();
+          const medicamentosArray = Object.keys(medicamentosData).map(key => ({
+            id: key,
+            ...medicamentosData[key]
+          }));
+          setListaMedicamentos(medicamentosArray);
+        } else {
+          setListaMedicamentos([]); // Limpiar si no hay datos
+        }
+      }
+    } catch (error) {
+      console.error("Error al cargar medicamentos:", error);
+    }
+  };
 
   useEffect(() => {
-    // cargarMedicamentos();
+    cargarMedicamentos();
     const auth = getAuth();
     const user = auth.currentUser;
 
@@ -57,50 +59,24 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
     const db = getDatabase();
     const notificacionesRef = ref(db, `usuarios/${user.uid}/notificaciones`);
 
-    // Escucha cambios en las notificaciones
     const unsubscribe = onValue(notificacionesRef, (snapshot) => {
       const data = snapshot.val();
       const totalNotificaciones = data ? Object.keys(data).length : 0;
-      setNumeroNotificaciones(totalNotificaciones); // Actualiza el estado
+      setNumeroNotificaciones(totalNotificaciones);
     });
 
-    // Limpia el listener al desmontar el componente
     return () => unsubscribe();
   }, []);
-
-  const verificarUsuarios = async () => {
-    try {
-      const db = getDatabase();
-      const snapshot = await get(ref(db, 'usuarios'));
-      const usuarios = snapshot.val();
-      
-      if (!usuarios) {
-        Alert.alert("Info", "No hay usuarios registrados");
-        return;
-      }
   
-      const listaUsuarios = Object.entries(usuarios).map(([uid, user]) => (
-
-        `- ${user.nombre} (${user.email})\nRegistrado: ${new Date(user.fechaRegistro).toLocaleDateString()}`
-        `• ${user.nombre} (${user.email})\nRegistrado: ${new Date(user.fechaRegistro).toLocaleDateString()}`
-
-      )).join('\n\n');
-  
-      Alert.alert(
-        "Usuarios Registrados",
-        listaUsuarios,
-        [{ text: "OK" }]
-      );
-    } catch (error) {
-      Alert.alert("Error", "No se pudieron cargar los usuarios");
-      console.error("Error fetching users:", error);
-    }
-  };
-
   return (
+    <ImageBackground 
+      source={imagenFondo}
+      style={{ flex: 1, width: '100%', height: '100%' }}
+      resizeMode="cover"
+    >
     <View style={{ 
       flex: 1, 
-      backgroundColor: 'rgba(172, 163, 247, 0.89)',
+      backgroundColor: 'rgba(171, 163, 247, 0.73)',
       padding: 20
     }}>
       <TouchableOpacity 
@@ -115,7 +91,13 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
+        onBackdropPress={cerrarModal}
         onRequestClose={cerrarModal}
+        animationIn="slideInRight" // Animación de entrada desde la derecha
+        animationOut="slideOutRight" // Animación de salida hacia la derecha
+        backdropOpacity={0.5} // Opacidad del fondo oscuro
+        useNativeDriver={true}
+        style={styles.modalOverlay}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -141,6 +123,28 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
             >
             <Icon name="search" size={20} color="white" style={styles.modalButtonIcon} />
             <Text style={styles.modalButtonText}>Buscar Amigos</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+             style={styles.modalButton}
+             onPress={() => {
+              setScreen('Encuestas');
+              cerrarModal();
+             }}
+            >
+            <Icon name="assignment" size={20} color="white" style={styles.modalButtonIcon} />
+            <Text style={styles.modalButtonText}>Encuesta</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+             style={styles.modalButton}
+             onPress={() => {
+              setScreen('Chequeo');
+              cerrarModal();
+             }}
+            >
+            <Icon name="list" size={20} color="white" style={styles.modalButtonIcon} />
+            <Text style={styles.modalButtonText}>Revisar encuesta</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -196,27 +200,33 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
           </View>
      )}
       </TouchableOpacity>
+      <GestionMedicamentos
+          visible={showMedicamentos}
+          onClose={() => setShowMedicamentos(false)}
+          onSave={(nuevaLista) => {
+            setListaMedicamentos(nuevaLista);
+            setShowMedicamentos(false);
+          }}
+      />
       <View style={styles.contenedorPrincipal}>
         <Text style={styles.tituloBienvenida}>
           Bienvenido {nombreUsuario}
         </Text>
 
         <View style={styles.contenidoCentrado}>
-          {/* Comentado el botón de medicamentos
           <TouchableOpacity 
             onPress={() => setShowMedicamentos(true)}
             style={styles.botonMedicamentos}
           >
             <Icon name="medication" size={24} color="white" style={styles.iconoBoton} />
             <Text style={styles.textoBotonMedicamentos}>Agregar Medicamentos</Text>
-          </TouchableOpacity> */}
+          </TouchableOpacity>
 
-          {/* Comentada la vista previa de medicamentos
           {listaMedicamentos.length > 0 ? (
             <View style={styles.vistaPreviaMedicamentos}>
               <Text style={styles.subtitulo}>Tus Medicamentos:</Text>
-              {listaMedicamentos.slice(0, 3).map((item, index) => (
-                <Text key={index} style={styles.itemMedicamento}>
+              {listaMedicamentos.slice(0, 3).map((item) => (
+                <Text key={item.id} style={styles.itemMedicamento}>
                   • {item.nombre} - {item.dosis}
                 </Text>
               ))}
@@ -228,9 +238,8 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
             <View style={styles.vistaPreviaMedicamentos}>
               <Text style={styles.subtitulo}>No tienes medicamentos registrados</Text>
             </View>
-          )} */}
-          
-          <View style={styles.contenedorBotones}>
+          )}
+  <View style={styles.contenedorBotones}>
   <View style={styles.botonContainer}>
     <Button
       title="Subir Información"
@@ -239,13 +248,6 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
               />
           <View style={styles.contenedorBotones}>
             <View style={styles.botonContainer}>
-              <Button
-                title="Ver usuarios"
-                onPress={verificarUsuarios}
-                color="#6200ee"
-              />
-            </View>
-            <View style={styles.botonContainer}>
             </View>
             </View>
             </View>
@@ -253,10 +255,10 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
         </View>
       </View>
     </View>
+  </ImageBackground>
   );
 };
 
-// Mantenemos todos los estilos por si se necesitan más adelante
 const styles = StyleSheet.create({
   contenedorPrincipal: {
     flex: 1,
@@ -302,7 +304,7 @@ const styles = StyleSheet.create({
     zIndex: 1
   },
   botonMedicamentos: {
-    backgroundColor: '#4682B4',
+    backgroundColor: 	'#0033CC',
     borderRadius: 25,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -368,35 +370,36 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
+    margin: 0, 
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end', 
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo semitransparente
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
   },
   modalContent: {
-    width: '80%',
+    width: '70%',
+    height: '100%',
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 20,
-    alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 60,
     fontWeight: 'bold',
     marginBottom: 20,
     color: '#333',
   },
   modalButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    padding: 15,
-    backgroundColor: '#6200EE',
-    borderRadius: 8,
-    marginBottom: 10,
-    alignItems: 'center',
+     flexDirection: 'row',
+     alignItems: 'center',
+     paddingVertical: 12,
+     paddingHorizontal: 15,
+     backgroundColor: '#6200EE',
+     borderRadius: 10,
+     marginBottom: 15,
   },
   modalButtonIcon: {
-    marginRight: 10, 
+    marginRight: 15, 
   },
   modalButtonText: {
     color: 'white',
