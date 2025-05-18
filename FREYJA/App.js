@@ -17,7 +17,7 @@ import GestionMedicamentos from './componentes/GestionMedicamentos';
 import imagenFondo from './assets/Freyja.png';
 import Encuestas from './componentes/Encuestas';
 import Chequeo from './componentes/Chequeo';
-
+import QRusuarios from './componentes/QRusuarios';
 // Componente de carga inicial
 const LoadingScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#A89CC8' }}>
@@ -147,10 +147,10 @@ useEffect(() => {
 
   return unsubscribe;
 }, []);
-  const handleSetScreen = (screen, params = null) => {
-    console.log('setScreen llamado con:', { screen, params });
-    setScreen(screen);
-    setScreenParams(params);
+  const handleSetScreen = (screen, params = {}) => {
+  console.log('setScreen llamado con:', { screen, params });
+  setScreen(screen);
+  setScreenParams(params || {}); // Siempre será un objeto
   };
   
   const cerrarSesion = async () => {
@@ -255,6 +255,13 @@ useEffect(() => {
           setScreen={handleSetScreen} 
           nombreUsuario={nombreUsuario}
           params={screenParams} 
+        />
+      )}
+      {screen === 'QRusuarios' && (
+        <QRusuarios
+          setScreen={handleSetScreen} 
+          nombreUsuario={nombreUsuario}
+          params={screenParams || {}}
         />
       )}
       {screen === 'GestionMedicamentos' && (

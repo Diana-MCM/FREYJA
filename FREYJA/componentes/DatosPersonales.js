@@ -33,58 +33,47 @@ const RegistroDatos = ({ setScreen }) => {
   };
 
   const guardarDatos = async () => {
-    if (!nombrecompleto || !edad || !genero || !estatura) {
-      Alert.alert("Error", "Por favor completa todos los campos");
+  if (!nombrecompleto || !edad || !genero || !estatura) {
+    Alert.alert("Error", "Por favor completa todos los campos");
+    return;
+  }
+
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      Alert.alert("Error", "No hay usuario autenticado. Inicia sesión primero.");
       return;
     }
 
-    try {
-      const auth = getAuth(); 
-      const user = auth.currentUser; 
+    const db = getDatabase();
+    
+    // Guardamos solo en datos_personales
+    await set(ref(db, `usuarios/${user.uid}/datos_personales`), {
+      nombrecompleto,
+      edad,
+      genero,
+      estatura,
+      fechaRegistro: new Date().toISOString()
+    });
 
-      if (!user) {
-        Alert.alert("Error", "No hay usuario autenticado. Inicia sesión primero.");
-        return;
-      }
-
-      const db = getDatabase();
-      const userId = await generarUserIdUnico(); // Generamos el ID único aquí
-      
-      await set(ref(db, `usuarios/${user.uid}/datos_personales`), {
-        nombrecompleto,
-        userId: userId, // Usamos el ID generado
-        edad,
-        genero,
-        estatura,
-        fechaRegistro: new Date().toISOString()
-      });
-
-      // Actualizamos también el userId en el nodo principal del usuario
-      await update(ref(db, `usuarios/${user.uid}`), {
-        userId: userId
-      });
-
-      // Verificación opcional (puedes quitarla si no la necesitas)
-      const snapshot = await get(ref(db, `usuarios/${user.uid}/datos_personales`));
-      
-      if (snapshot.exists()) {
-        Alert.alert(
-          "Éxito",
-          "Tus datos se guardaron correctamente:\n\n" +
-          `Nombre: ${snapshot.val().nombrecompleto}\n` +
-          `Edad: ${snapshot.val().edad}\n` +
-          `Género: ${snapshot.val().genero}\n` +
-          `Estatura: ${snapshot.val().estatura} cm`,
-          [{ text: "OK", onPress: () => setScreen('Inicio') }]
-        );
-      }
-    } catch (error) {
-      Alert.alert("Error", "No se pudieron guardar los datos");
-      console.error("Error al guardar:", error);
+  const snapshot = await get(ref(db, `usuarios/${user.uid}/datos_personales`));
+    
+    if (snapshot.exists()) {
+      Alert.alert(
+        "Éxito",
+        "Tus datos se guardaron correctamente",
+        [{ text: "OK", onPress: () => setScreen('Inicio') }]
+      );
     }
-  };
+  } catch (error) {
+    Alert.alert("Error", "No se pudieron guardar los datos");
+    console.error("Error al guardar:", error);
+  }
+};
 
-  // El resto del código (UI) se mantiene igual ⬇️
+  // El resto del código (UI) se mantiene igual ⬇
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>Registro de Datos Personales</Text>
@@ -140,7 +129,7 @@ const RegistroDatos = ({ setScreen }) => {
   );
 };
 
-// Estilos (se mantienen igual) ⬇️
+// Estilos (se mantienen igual) ⬇
 const styles = StyleSheet.create({
   container: {
     flex: 1,

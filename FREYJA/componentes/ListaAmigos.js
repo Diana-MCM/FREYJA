@@ -5,7 +5,6 @@ import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Button } from 'react-native';
 
-
 const ListaAmigos = ({ setScreen }) => {
   const [amigos, setAmigos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,8 +63,16 @@ const ListaAmigos = ({ setScreen }) => {
     }
   };
 
+  const verChequeosAmigo = (amigo) => {
+    // Navegar a pantalla de chequeos del amigo
+    setScreen('ChequeosAmigo', { amigoId: amigo.userId, nombreAmigo: amigo.nombre });
+  };
+
   const renderItem = ({ item }) => (
-    <View style={styles.tarjetaAmigo}>
+    <TouchableOpacity 
+      style={styles.tarjetaAmigo}
+      onPress={() => verChequeosAmigo(item)}
+    >
       <View style={styles.infoAmigo}>
         <Text style={styles.nombreAmigo}>{item.nombre}</Text>
         <Text style={styles.userIdAmigo}>ID: {item.userId}</Text>
@@ -75,52 +82,56 @@ const ListaAmigos = ({ setScreen }) => {
       </View>
       <TouchableOpacity 
         style={styles.botonEliminar}
-        onPress={() => eliminarAmigo(item.id)}
+        onPress={(e) => {
+          e.stopPropagation(); // Previene que se active el onPress del contenedor
+          eliminarAmigo(item.id);
+        }}
       >
         <Icon name="delete" size={20} color="white" />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-         <SafeAreaView>
-      <Text style={styles.titulo}>Mis Amigos</Text>
-      
-      {loading ? (
-        <Text style={styles.cargando}>Cargando lista de amigos...</Text>
-      ) : amigos.length === 0 ? (
-        <Text style={styles.sinAmigos}>No tienes amigos agregados todavía</Text>
-      ) : (
-        <FlatList
-          data={amigos}
-          renderItem={renderItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.lista}
+      <SafeAreaView>
+        <Text style={styles.titulo}>Mis Amigos</Text>
+        
+        {loading ? (
+          <Text style={styles.cargando}>Cargando lista de amigos...</Text>
+        ) : amigos.length === 0 ? (
+          <Text style={styles.sinAmigos}>No tienes amigos agregados todavía</Text>
+        ) : (
+          <FlatList
+            data={amigos}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.lista}
+          />
+        )}
+
+        <TouchableOpacity 
+          style={styles.botonBuscar}
+          onPress={() => setScreen('Busqueda')}
+        >
+          <Icon name="person-search" size={20} color="white" />
+          <Text style={styles.textoBotonBuscar}>Buscar Amigos</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.botonsolicitud}
+          onPress={() => setScreen('SolicitudesAmistad')}
+        >
+          <Icon name="group-add" size={20} color="white" />
+          <Text style={styles.textoBotonBuscar}>Solicitudes de amistad</Text>
+        </TouchableOpacity>
+        
+        <Button
+          title="Volver a Inicio"
+          onPress={() => setScreen('Inicio')}
+          color="#757575"
         />
-      )}
-
-      <TouchableOpacity 
-        style={styles.botonBuscar}
-        onPress={() => setScreen('Busqueda')}
-      >
-        <Icon name="person-search" size={20} color="white" />
-        <Text style={styles.textoBotonBuscar}>Buscar Amigos</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity 
-        style={styles.botonsolicitud}
-        onPress={() => setScreen('SolicitudesAmistad')}
-      >
-        <Icon name="group-add" size={20} color="white" />
-        <Text style={styles.textoBotonBuscar}>solicutudes de amistad</Text>
-      </TouchableOpacity>
-      <Button
-        title="Volver a Inicio"
-        onPress={() => setScreen('Inicio')}
-        color="#757575"
-      />
-         </SafeAreaView>
+      </SafeAreaView>
     </View>
   );
 };

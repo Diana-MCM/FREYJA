@@ -10,7 +10,7 @@ import Subirinformacion from './Subirinformacion';
 import GestionMedicamentos from './GestionMedicamentos';
 import imagenFondo from './imagenes/Freyjaa.png';
 
-const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
+const PantallaInicio = ({ navigation, setScreen, nombreUsuario, cerrarSesion }) => {
   const [modalVisible, setModalVisible] = useState(false); // Estado para controlar el modal
   const abrirModal = () => setModalVisible(true);
   const cerrarModal = () => setModalVisible(false);
@@ -112,6 +112,17 @@ const PantallaInicio = ({ setScreen, nombreUsuario, cerrarSesion  }) => {
             >
             <Icon name="account-circle" size={20} color="white" style={styles.modalButtonIcon} />
             <Text style={styles.modalButtonText}>Ver Datos</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+             style={styles.modalButton}
+             onPress={() => {
+              setScreen('QRusuarios', { userName: nombreUsuario });
+              cerrarModal();
+             }}
+            >
+              <Icon name="qr-code" size={20} color="white" style={styles.modalButtonIcon} />
+              <Text style={styles.modalButtonText}>Mi Código Amigo</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 

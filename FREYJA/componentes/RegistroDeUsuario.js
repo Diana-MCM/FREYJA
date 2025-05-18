@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert } from 'react-native';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase/firebase';
-import { inicializarEstructuraNotificaciones } from './FirebaseUtils';
-import { getDatabase, ref, update } from 'firebase/database';
+import {  getDatabase, ref, set, get, runTransaction} from 'firebase/database';
 
 const RegistroDeUsuario = ({ setScreen }) => {
   const [email, setEmail] = useState('');
@@ -11,42 +10,65 @@ const RegistroDeUsuario = ({ setScreen }) => {
   const [nombre, setNombre] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
+  // Función para generar ID único de 10 dígitos
+const generarYReservarIdUnico = async (db, uid) => {
+  const MAX_INTENTOS = 10;
+  
+  for (let i = 0; i < MAX_INTENTOS; i++) {
     try {
-      setLoading(true);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Actualiza el perfil del usuario con un nombre
-      await updateProfile(user, { displayName: nombre });
-
-      // Inicializa la estructura de notificaciones
-      const userId = user.uid;
-      const resultado = await inicializarEstructuraNotificaciones(userId);
-
-      if (resultado) {
-        console.log("Estructura de notificaciones inicializada correctamente");
-      } else {
-        console.error("Error al inicializar la estructura de notificaciones");
-      }
-
-      const db = getDatabase();
-      await update(ref(db, `usuarios/${userId}`), {
-      nombre: nombre || "Usuario sin nombre", // Valor predeterminado si nombre está vacío
-      correo: email,
-      solicitudes: {}, // Inicializa solicitudes como un objeto vacío
-      notificaciones: {}, // Inicializa notificaciones como un objeto vacío
-      });
-
-      Alert.alert("Registro exitoso", "Usuario registrado correctamente");
-      setScreen('DatosPersonales');
+      const idCandidato = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+      const idRef = ref(db, `ids_usuarios/${idCandidato}`);
+      
+      // Verificar existencia
+      const snapshot = await get(idRef);
+      if (snapshot.exists()) continue;
+      
+      // Intentar reservar con transacción
+      await set(idRef, uid);
+      return idCandidato;
+      
     } catch (error) {
-      console.error("Error al registrar usuario:", error);
-      Alert.alert("Error", "No se pudo registrar el usuario. Inténtalo de nuevo.");
-    } finally {
-      setLoading(false);
+      console.log("Intento fallido de generación de ID:", error.message);
+      await new Promise(resolve => setTimeout(resolve, 100)); // Pequeña pausa
     }
-  };
+  }
+  
+  throw new Error("No se pudo generar ID único después de varios intentos");
+};
+
+const handleRegister = async () => {
+  try {
+    setLoading(true);
+    
+    // 1. Crear usuario en Authentication
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    
+    // 2. Generar ID único seguro con transacción
+    const db = getDatabase();
+    const userId10digitos = await generarYReservarIdUnico(db, user.uid);
+    
+    // 3. Crear estructura de usuario
+    await set(ref(db, `usuarios/${user.uid}`), {
+      nombre: nombre.trim(),
+      correo: email.trim(),
+      userId: userId10digitos,
+      fechaRegistro: new Date().toISOString(),
+      datos_personales: {
+        nombrecompleto: nombre.trim(),
+        fechaRegistro: new Date().toISOString()
+      }
+    });
+    
+    Alert.alert("Registro exitoso", `Tu ID de usuario es: ${userId10digitos}`);
+    setScreen('DatosPersonales');
+  } catch (error) {
+    console.error("Error en registro:", error);
+    Alert.alert("Error", error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <View style={{ 
@@ -57,7 +79,7 @@ const RegistroDeUsuario = ({ setScreen }) => {
     }}>
       <Text style={{ fontSize: 30, fontWeight: 'bold', marginBottom: 10 }}>REGISTRO</Text>
       <TextInput
-        placeholder="Nombre"
+        placeholder="Nombre completo"
         value={nombre}
         onChangeText={setNombre}
         style={{ 
@@ -69,7 +91,7 @@ const RegistroDeUsuario = ({ setScreen }) => {
         }}
       />
       <TextInput
-        placeholder="Correo"
+        placeholder="Correo electrónico"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"

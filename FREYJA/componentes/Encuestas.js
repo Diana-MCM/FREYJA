@@ -33,7 +33,6 @@ const EncuestaChequeoETS = ({ onSubmit, setScreen, userId }) => {
       opciones: [
         { value: 'si', label: 'Sí' },
         { value: 'no', label: 'No' },
-        { value: 'no_responde', label: 'Prefiero no responder' }
       ]
     },
     {
@@ -51,7 +50,6 @@ const EncuestaChequeoETS = ({ onSubmit, setScreen, userId }) => {
       opciones: [
         { value: 'si', label: 'Sí' },
         { value: 'no', label: 'No' },
-        { value: 'no_se', label: 'No estoy seguro/a' }
       ]
     },
     {
@@ -60,7 +58,6 @@ const EncuestaChequeoETS = ({ onSubmit, setScreen, userId }) => {
       opciones: [
         { value: 'si', label: 'Sí' },
         { value: 'no', label: 'No' },
-        { value: 'no_responde', label: 'Prefiero no responder' }
       ]
     },
     {
@@ -94,7 +91,7 @@ const guardarEncuestaEnFirebase = async (resultado) => {
     };
 
     const db = getDatabase(app);
-    const newEncuestaRef = push(ref(db, `usuarios/${userId}/chequeos`));
+    const newEncuestaRef = push(ref(db, `usuarios/$ { userId}/chequeos`));
     await set(newEncuestaRef, encuestaData);
 
     console.log('Encuesta guardada en Firebase Realtime Database');
@@ -274,6 +271,7 @@ const guardarEncuestaEnFirebase = async (resultado) => {
           )}
   
            {pasoActual < preguntas.length ? (
+            <>
              <Button 
                mode="contained" 
                onPress={siguientePaso}
@@ -282,9 +280,10 @@ const guardarEncuestaEnFirebase = async (resultado) => {
              >
               Siguiente
              </Button>
+            </>
            ) : (
              <Button 
-               mode="contained" 
+              mode="contained" 
                onPress={handleSubmit}
                style={styles.boton}
                labelStyle={styles.botonTexto}
@@ -293,7 +292,15 @@ const guardarEncuestaEnFirebase = async (resultado) => {
              </Button>
            )}
          </View>
-        
+         <View style={{ height: 12 }} />
+         <Button
+                mode="outlined"
+                onPress={() => setScreen('Inicio')}
+                style={styles.botonSecundario}
+                labelStyle={styles.botonSecundarioTexto}
+         >
+          Volver al inicio
+         </Button>
         <Text style={styles.notaPrivacidad}>
           Estas respuestas las podrán ver tus amigos.
         </Text>
