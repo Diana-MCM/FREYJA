@@ -91,7 +91,7 @@ const guardarEncuestaEnFirebase = async (resultado) => {
     };
 
     const db = getDatabase(app);
-    const newEncuestaRef = push(ref(db, `usuarios/$ { userId}/chequeos`));
+    const newEncuestaRef = push(ref(db, `usuarios/${userId}/chequeos`));
     await set(newEncuestaRef, encuestaData);
 
     console.log('Encuesta guardada en Firebase Realtime Database');

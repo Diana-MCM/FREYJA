@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity, PermissionsAndroid, Modal, Platform } from 'react-native';
-import { getDatabase, ref, query, orderByChild, equalTo, get, update } from 'firebase/database';
+import { getDatabase, ref, query, orderByChild, equalTo, get, update, push, set  } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { Camera } from 'expo-camera';
+import * as Camera from 'expo-camera';
+
+
 
 const BuscarAmigos = ({ setScreen }) => {
   const [userIdBusqueda, setUserIdBusqueda] = useState('');
@@ -15,6 +17,12 @@ const BuscarAmigos = ({ setScreen }) => {
   const [scanned, setScanned] = useState(false);
 
   useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert("Error", "Debes iniciar sesión primero");
+      return false;
+   }
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === 'granted');
@@ -112,54 +120,66 @@ const BuscarAmigos = ({ setScreen }) => {
   };
 
   const enviarSolicitud = async () => {
-    if (!amigoEncontrado) return;
+  if (!amigoEncontrado) return;
 
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (!user) {
-        Alert.alert("Error", "Debes iniciar sesión primero");
-        return;
-      }
-
-      const db = getDatabase();
-      const userRef = ref(db, `usuarios/${user.uid}`);
-      const userSnapshot = await get(userRef);
-      const userData = userSnapshot.val();
-
-      const updates = {};
-      updates[`usuarios/${amigoEncontrado.id}/solicitudes/${user.uid}`] = {
-        nombre: userData.nombre,
-        userId: userData.userId,
-        fechaSolicitud: new Date().toISOString()
-      };
-
-      const notificacionId = Date.now().toString();
-      updates[`usuarios/${amigoEncontrado.id}/notificaciones/${notificacionId}`] = {
-        titulo: "Nueva solicitud de amistad",
-        mensaje: `${userData.nombre} te ha enviado una solicitud de amistad`,
-        fecha: new Date().toISOString(),
-        tipo: "solicitud_amistad",
-        userIdOrigen: user.uid,
-        leida: false,
-        metadata: {
-          action: "friendship_request",
-          solicitudId: user.uid
-        }
-      };
-
-      await update(ref(db), updates);
-
-      Alert.alert("¡Éxito!", `Solicitud enviada a ${amigoEncontrado.nombre}`);
-      setAmigoEncontrado(null);
-      setUserIdBusqueda('');
-    } catch (error) {
-      console.error("Error al enviar solicitud:", error);
-      Alert.alert("Error", "No se pudo enviar la solicitud");
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert("Error", "Debes iniciar sesión primero");
+      return;
     }
-  };
+
+    const db = getDatabase();
+    const solicitudId = push(ref(db, 'solicitudes')).key;
+    
+    const userRef = ref(db, `usuarios/${user.uid}/nombre`);
+const userSnapshot = await get(userRef);
+const miNombre = userSnapshot.exists() ? userSnapshot.val() : 'Usuario';
+
+const solicitudData = {
+  nombre: miNombre,
+  userId: user.uid,
+  fechaSolicitud: new Date().toISOString(),
+  estado: "pendiente"
+};
+
+const notificacionData = {
+  titulo: "Nueva solicitud de amistad",
+  mensaje: `${miNombre} te ha enviado una solicitud de amistad`,
+  fecha: new Date().toISOString(),
+  tipo: "solicitud_amistad",
+  userIdOrigen: user.uid,
+  leida: false,
+  metadata: {
+    action: "friendship_request",
+    solicitudId: solicitudId
+  }
+};
+
+    // Preparamos todas las actualizaciones
+    const updates = {};
+    
+    // 1. Añadir solicitud al receptor
+    updates[`usuarios/${amigoEncontrado.id}/solicitudes/${solicitudId}`] = solicitudData;
+    
+    // 2. Añadir notificación al receptor
+    updates[`usuarios/${amigoEncontrado.id}/notificaciones/${Date.now()}`] = notificacionData;
+    
+    // Ejecutamos todas las actualizaciones atómicamente
+    await update(ref(db), updates);
+
+    Alert.alert("¡Éxito!", `Solicitud enviada a ${amigoEncontrado.nombre}`);
+    setAmigoEncontrado(null);
+    setUserIdBusqueda('');
+  } catch (error) {
+    console.error("Error al enviar solicitud:", error);
+    Alert.alert("Error", "No se pudo enviar la solicitud. Verifica tu conexión.");
+  }
+};
 
   return (
+    
     <View style={styles.container}>
       <Text style={styles.titulo}>Buscar Amigos</Text>
 
@@ -191,8 +211,11 @@ const BuscarAmigos = ({ setScreen }) => {
               <Camera
                 style={styles.camera}
                 onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-                barCodeScannerSettings={{ barCodeTypes: ['qr'] }}
+                barCodeScannerSettings={{
+                barCodeTypes: ['qr'],
+                 }}
               >
+
                 <View style={styles.overlay}>
                   <View style={styles.border} />
                   <Text style={styles.scanText}>Escanea un código QR de amigo</Text>

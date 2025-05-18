@@ -221,7 +221,7 @@ const PantallaInicio = ({ navigation, setScreen, nombreUsuario, cerrarSesion }) 
       />
       <View style={styles.contenedorPrincipal}>
         <Text style={styles.tituloBienvenida}>
-          Bienvenido {nombreUsuario}
+          Hola {nombreUsuario}
         </Text>
 
         <View style={styles.contenidoCentrado}>

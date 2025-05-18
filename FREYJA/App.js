@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput, Alert,ImageBackground} from 'react-native';
+import { View, Text, Button, TextInput, Alert, ImageBackground, SafeAreaView } from 'react-native';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import PantallaInicio from './componentes/iniciarsesion';
 import RegistroDeUsuario from './componentes/RegistroDeUsuario';
@@ -18,6 +18,8 @@ import imagenFondo from './assets/Freyja.png';
 import Encuestas from './componentes/Encuestas';
 import Chequeo from './componentes/Chequeo';
 import QRusuarios from './componentes/QRusuarios';
+import Chequeoamigos from './componentes/Chequeoamigos';
+
 // Componente de carga inicial
 const LoadingScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#A89CC8' }}>
@@ -29,7 +31,7 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Por favor ingrese correo y contraseña");
@@ -39,10 +41,8 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
       const user = userCredential.user;
       const nombre = user.displayName || email.split('@')[0];
-      
       setNombreUsuario(nombre);
       setScreen('Inicio');
     } catch (error) {
@@ -63,62 +63,62 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
   };
 
   return (
-   <ImageBackground 
+    <ImageBackground
       source={imagenFondo}
-      style={{ flex: 1, width: '100%', height: '100%' }}
+      style={{ flex: 1, width: '100%', height: '100%', backgroundColor: 'rgb(2, 0, 7)' }}
       resizeMode="cover"
     >
-    <View style={{ 
-      flex: 1, 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      backgroundColor: 'rgba(234, 231, 241, 0.29)'
-    }}>
-      <Text style={{ fontSize: 30, fontWeight: 'bold', marginBottom: 10 }}>BIENVENIDO A FREYJA</Text>
-      <Text style={{ fontSize: 20, marginBottom: 10, textAlign: 'center' }}>
-        Si ya cuenta con una cuenta, por favor inicie sesión.
-      </Text>
-      <Text style={{ fontSize: 20, marginBottom: 10, textAlign: 'center' }}>
-        En caso de que no, por favor regístrese para entrar.
-      </Text>
-      <TextInput
-        placeholder="Correo"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        style={{ 
-          borderWidth: 1, 
-          marginBottom: 10, 
-          width: 200, 
-          padding: 5, 
-          backgroundColor: 'white' 
-        }}
-      />
-      <TextInput
-        placeholder="Contraseña"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        style={{ 
-          borderWidth: 1, 
-          marginBottom: 10, 
-          width: 200, 
-          padding: 5, 
-          backgroundColor: 'white' 
-        }}
-      />
-      <Button 
-        title="Entrar" 
-        onPress={handleLogin}
-        disabled={loading}
-      />
-      <Button 
-        title="Registrarse" 
-        onPress={() => setScreen('RegistroDeUsuario')} 
-        disabled={loading}
-      />
-    </View>
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(234, 231, 241, 0.29)'
+      }}>
+        <Text style={{ fontSize: 30, fontWeight: 'bold', marginBottom: 10 }}>BIENVENIDO A FREYJA</Text>
+        <Text style={{ fontSize: 20, marginBottom: 10, textAlign: 'center' , color: 'black',fontWeight: 'bold' }}>
+          Si ya cuenta con una cuenta, por favor inicie sesión.
+        </Text>
+        <Text style={{ fontSize: 20, marginBottom: 10, textAlign: 'center', color: 'black',fontWeight: 'bold' }}>
+          En caso de que no, por favor regístrese para entrar.
+        </Text>
+        <TextInput
+          placeholder="Correo"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          style={{
+            borderWidth: 1,
+            marginBottom: 10,
+            width: 200,
+            padding: 5,
+            backgroundColor: 'white'
+          }}
+        />
+        <TextInput
+          placeholder="Contraseña"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          style={{
+            borderWidth: 1,
+            marginBottom: 10,
+            width: 200,
+            padding: 5,
+            backgroundColor: 'white'
+          }}
+        />
+        <Button
+          title="Entrar"
+          onPress={handleLogin}
+          disabled={loading}
+        />
+        <Button
+          title="Registrarse"
+          onPress={() => setScreen('RegistroDeUsuario')}
+          disabled={loading}
+        />
+      </View>
     </ImageBackground>
   );
 };
@@ -130,29 +130,30 @@ export default function App() {
   const [appReady, setAppReady] = useState(false);
   const [userId, setUserId] = useState(null);
 
-useEffect(() => {
-  const auth = getAuth();
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    setAppReady(true);
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAppReady(true);
 
-    if (user) {
-      setNombreUsuario(user.displayName || user.email?.split('@')[0] || 'Usuario');
-      setUserId(user.uid); // <-- aquí
-      setScreen('Inicio');
-    } else {
-      setUserId(null); // <-- aquí
-      setScreen('IniciarSesion');
-    }
-  });
+      if (user) {
+        setNombreUsuario(user.displayName || user.email?.split('@')[0] || 'Usuario');
+        setUserId(user.uid);
+        setScreen('Inicio');
+      } else {
+        setUserId(null);
+        setScreen('IniciarSesion');
+      }
+    });
 
-  return unsubscribe;
-}, []);
+    return unsubscribe;
+  }, []);
+
   const handleSetScreen = (screen, params = {}) => {
-  console.log('setScreen llamado con:', { screen, params });
-  setScreen(screen);
-  setScreenParams(params || {}); // Siempre será un objeto
+    console.log('setScreen llamado con:', { screen, params });
+    setScreen(screen);
+    setScreenParams(params || {});
   };
-  
+
   const cerrarSesion = async () => {
     try {
       await signOut(auth);
@@ -170,108 +171,117 @@ useEffect(() => {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      {screen === 'Inicio' && (
-        <PantallaInicio 
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario}
-          cerrarSesion={cerrarSesion}
-        />
-      )}
-      {screen === 'IniciarSesion' && (
-        <IniciarSesion 
-          setScreen={handleSetScreen} 
-          setNombreUsuario={setNombreUsuario} 
-        />
-      )}
-      {screen === 'RegistroDeUsuario' && (
-        <RegistroDeUsuario 
-          setScreen={handleSetScreen} 
-          setNombreUsuario={setNombreUsuario} 
-        />
-      )}
-      {screen === 'DatosPersonales' && (
-        <DatosPersonales 
-          setScreen={handleSetScreen}
-          nombreUsuario={nombreUsuario}
-        />
-      )}
-      {screen === 'VistaDatos' && (
-        <VistaDatos 
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario} 
-        />
-      )}
-      {screen === 'Calendario' && (
-        <Calendario 
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario} 
-        />
-      )}
-      {screen === 'Busqueda' && (
-        <Busqueda
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario} 
-        />
-      )}
-      {screen === 'ListaAmigos' && (
-        <ListaAmigos
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario} 
-        />
-      )}
-      {screen === 'Encuestas' && (
-        <Encuestas 
-        setScreen={handleSetScreen} 
-        nombreUsuario={nombreUsuario} 
-        userId={userId} />
-      )}
-      {screen === 'Chequeo' && (
-        <Chequeo
-        setScreen={handleSetScreen} 
-        nombreUsuario={nombreUsuario} 
-        userId={userId} />
-      )}
-      {screen === 'Notificaciones' && (
-        <Notificaciones 
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario} 
-        />
-      )}
-      {screen === 'SolicitudesAmistad' && (
-        <SolicitudesAmistad
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario} 
-        />
-      )}
-      {screen === 'Subirinformacion' && (
-        <Subirinformacion
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario} 
-        />
-      )}
-      {screen === 'Carpetas' && (
-        <Carpetas
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario}
-          params={screenParams} 
-        />
-      )}
-      {screen === 'QRusuarios' && (
-        <QRusuarios
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario}
-          params={screenParams || {}}
-        />
-      )}
-      {screen === 'GestionMedicamentos' && (
-        <GestionMedicamentos
-          setScreen={handleSetScreen} 
-          nombreUsuario={nombreUsuario}
-          params={screenParams} 
-        />
-      )}
-    </View>
-    
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'rgba(234, 231, 241, 0.29)' }}>
+      <View style={{ flex: 1 }}>
+        {screen === 'Inicio' && (
+          <PantallaInicio
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+            cerrarSesion={cerrarSesion}
+          />
+        )}
+        {screen === 'IniciarSesion' && (
+          <IniciarSesion
+            setScreen={handleSetScreen}
+            setNombreUsuario={setNombreUsuario}
+          />
+        )}
+        {screen === 'RegistroDeUsuario' && (
+          <RegistroDeUsuario
+            setScreen={handleSetScreen}
+            setNombreUsuario={setNombreUsuario}
+          />
+        )}
+        {screen === 'DatosPersonales' && (
+          <DatosPersonales
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+          />
+        )}
+        {screen === 'VistaDatos' && (
+          <VistaDatos
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+          />
+        )}
+        {screen === 'Calendario' && (
+          <Calendario
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+          />
+        )}
+        {screen === 'Busqueda' && (
+          <Busqueda
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+          />
+        )}
+        {screen === 'ListaAmigos' && (
+          <ListaAmigos
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+          />
+        )}
+        {screen === 'Encuestas' && (
+          <Encuestas
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+            userId={userId}
+          />
+        )}
+        {screen === 'Chequeo' && (
+          <Chequeo
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+            userId={userId}
+          />
+        )}
+        {screen === 'Notificaciones' && (
+          <Notificaciones
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+          />
+        )}
+        {screen === 'SolicitudesAmistad' && (
+          <SolicitudesAmistad
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+          />
+        )}
+        {screen === 'Subirinformacion' && (
+          <Subirinformacion
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+          />
+        )}
+        {screen === 'Carpetas' && (
+          <Carpetas
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+            params={screenParams}
+          />
+        )}
+        {screen === 'QRusuarios' && (
+          <QRusuarios
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+            params={screenParams || {}}
+          />
+        )}
+        {screen === 'GestionMedicamentos' && (
+          <GestionMedicamentos
+            setScreen={handleSetScreen}
+            nombreUsuario={nombreUsuario}
+            params={screenParams}
+          />
+        )}
+        {screen === 'Chequeoamigos' && (
+          <Chequeoamigos
+            setScreen={handleSetScreen}
+            route={{ params: screenParams || {} }}
+          />
+        )}
+      </View>
+    </SafeAreaView>
   );
 }

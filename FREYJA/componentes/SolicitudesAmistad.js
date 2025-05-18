@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Button } from 'react-native';
-import { getDatabase, ref, onValue, off, update } from 'firebase/database';
+import { getDatabase, ref, onValue, off, update, remove,set, push, get} from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -46,56 +46,81 @@ const SolicitudesAmistad = ({ setScreen }) => {
     return () => off(solicitudesRef);
   }, []);
 
-  const aceptarSolicitud = async (solicitud) => {
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (!user) {
-        Alert.alert("Error", "Debes iniciar sesión primero");
-        return;
-      }
-
-      const db = getDatabase();
-      
-      // Actualizar la estructura de datos
-      const updates = {};
-      
-      // Agregar como amigos mutuamente
-      updates[`usuarios/${user.uid}/amigos/${solicitud.id}`] = {
-        nombre: solicitud.nombre,
-        userId: solicitud.id,
-        fechaAmistad: new Date().toISOString()
-      };
-      
-      updates[`usuarios/${solicitud.id}/amigos/${user.uid}`] = {
-        nombre: user.displayName || 'Usuario',
-        userId: user.uid,
-        fechaAmistad: new Date().toISOString()
-      };
-      
-      // Eliminar la solicitud
-      updates[`usuarios/${user.uid}/solicitudes/${solicitud.id}`] = null;
-      
-      // Crear notificación de amistad aceptada
-      const notificacionId = Date.now().toString();
-      updates[`usuarios/${solicitud.id}/notificaciones/${notificacionId}`] = {
-        titulo: "Solicitud de amistad aceptada",
-        mensaje: `${user.displayName || 'Usuario'} ha aceptado tu solicitud de amistad.`,
-        fecha: new Date().toISOString(),
-        tipo: "amistad_aceptada",
-        userIdOrigen: user.uid,
-        leida: false,
-      };
-      
-      await update(ref(db), updates);
-      
-      Alert.alert("¡Éxito!", `Ahora eres amigo de ${solicitud.nombre}`);
-    } catch (error) {
-      console.error("Error al aceptar solicitud:", error);
-      Alert.alert("Error", "No se pudo aceptar la solicitud");
+ const aceptarSolicitud = async (solicitud) => {
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert("Error", "Debes iniciar sesión primero");
+      return;
     }
-  };
 
+    const db = getDatabase();
+
+    // 1. Eliminar la solicitud original
+    await remove(ref(db, `usuarios/${user.uid}/solicitudes/${solicitud.id}`));
+
+    // 2. Agregar solo en tu propio nodo de amigos
+    const amistadParaUsuarioActual = {
+      userId: solicitud.userId,
+      nombre: solicitud.nombre,
+      fechaAgregado: new Date().toISOString()
+    };
+
+    await set(ref(db, `usuarios/${user.uid}/amigos/${solicitud.userId}`), amistadParaUsuarioActual);
+
+    // 3. Notificación para el amigo (esto sí está permitido)
+    await set(ref(db, `usuarios/${solicitud.userId}/notificaciones/${Date.now()}`), {
+      titulo: "Solicitud aceptada",
+      mensaje: `Un usuario aceptó tu solicitud de amistad`,
+      fecha: new Date().toISOString(),
+      tipo: "amistad_aceptada",
+      userIdOrigen: user.uid,
+      leida: false
+    });
+    // 4. Solicitud inversa (evitar bucle y mostrar nombre correcto)
+    const solicitudInversaRef = ref(db, `usuarios/${solicitud.userId}/solicitudes`);
+    const snapshot = await get(solicitudInversaRef);
+    let yaExiste = false;
+    if (snapshot.exists()) {
+     const solicitudes = snapshot.val();
+    // Evita crear inversa si ya existe una solicitud de este usuario o si la solicitud original ya era inversa
+     yaExiste = Object.values(solicitudes).some(s => s.userId === user.uid);
+}
+    if (!yaExiste && !solicitud.esInversa) {
+     const userRef = ref(db, `usuarios/${user.uid}/nombre`);
+     const userSnapshot = await get(userRef);
+     const miNombre = userSnapshot.exists() ? userSnapshot.val() : (user.displayName || 'Usuario');
+     const nuevaSolicitudId = push(ref(db, 'solicitudes')).key;
+     await set(ref(db, `usuarios/${solicitud.userId}/solicitudes/${nuevaSolicitudId}`), {
+      nombre: miNombre,
+      userId: user.uid,
+      fechaSolicitud: new Date().toISOString(),
+      estado: "pendiente",
+      esInversa: true // Marca esta solicitud como inversa
+   });
+
+  // Notificación para la solicitud inversa
+  await set(ref(db, `usuarios/${solicitud.userId}/notificaciones/${Date.now() + 1}`), {
+    titulo: "Nueva solicitud de amistad",
+    mensaje: `${miNombre} te ha enviado una solicitud de amistad`,
+    fecha: new Date().toISOString(),
+    tipo: "solicitud_amistad",
+    userIdOrigen: user.uid,
+    leida: false,
+    metadata: {
+      action: "friendship_request",
+      solicitudId: nuevaSolicitudId
+    }
+  });
+}
+
+    Alert.alert("¡Éxito!", "Solicitud de amistad aceptada");
+  } catch (error) {
+    console.error("Error al aceptar solicitud:", error);
+    Alert.alert("Error", "No se pudo completar la operación");
+  }
+};
   const rechazarSolicitud = async (solicitudId, nombreRemitente) => {
     try {
       const auth = getAuth();

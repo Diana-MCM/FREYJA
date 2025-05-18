@@ -18,7 +18,7 @@ const ListaAmigos = ({ setScreen }) => {
       setLoading(false);
       return;
     }
-
+    console.log("Cargando amigos para UID:", user.uid);
     const db = getDatabase();
     const amigosRef = ref(db, `usuarios/${user.uid}/amigos`);
     
@@ -64,10 +64,16 @@ const ListaAmigos = ({ setScreen }) => {
   };
 
   const verChequeosAmigo = (amigo) => {
-    // Navegar a pantalla de chequeos del amigo
-    setScreen('ChequeosAmigo', { amigoId: amigo.userId, nombreAmigo: amigo.nombre });
-  };
-
+  console.log('Preparando navegación a ChequeosAmigo con:', {
+    userId: amigo.userId, 
+    nombre: amigo.nombre
+  });
+  
+  setScreen('Chequeoamigos', { 
+    amigoId: amigo.userId,  // Asegúrate que esto coincide con tu estructura de datos
+    nombreAmigo: amigo.nombre 
+  });
+};
   const renderItem = ({ item }) => (
     <TouchableOpacity 
       style={styles.tarjetaAmigo}

@@ -1,153 +1,278 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, SafeAreaView, TouchableOpacity, Modal, ScrollView, Button } from 'react-native';
 import { getDatabase, ref, onValue, off } from 'firebase/database';
-import { Button,SafeAreaView  } from 'react-native';
 
-const ChequeosAmigo = ({ route, setScreen }) => {
-  const { amigoId, nombreAmigo } = route.params;
+const Chequeoamigos = ({ route, setScreen }) => {
+  const { amigoId, nombreAmigo } = route.params || {};
   const [chequeos, setChequeos] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Para el modal de detalle
+  const [modalVisible, setModalVisible] = useState(false);
+  const [chequeoSeleccionado, setChequeoSeleccionado] = useState(null);
+
   useEffect(() => {
-  const db = getDatabase();
-  const chequeosRef = ref(db, `usuarios/${amigoId}/chequeos`);
+    if (!amigoId) {
+      setLoading(false);
+      return;
+    }
+    const db = getDatabase();
+    const chequeosRef = ref(db, `usuarios/${amigoId}/chequeos`);
 
-  const fetchChequeos = onValue(chequeosRef, (snapshot) => {
-    const chequeosArray = [];
-    snapshot.forEach(child => {
-      chequeosArray.push({
-        id: child.key,
-        ...child.val()
-      });
+    const fetchChequeos = onValue(chequeosRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const chequeosArray = [];
+        snapshot.forEach((child) => {
+          chequeosArray.push({
+            id: child.key,
+            ...child.val()
+          });
+        });
+        setChequeos(chequeosArray);
+      } else {
+        setChequeos([]);
+      }
+      setLoading(false);
+    }, (error) => {
+      setLoading(false);
     });
-    setChequeos(chequeosArray);
-    setLoading(false);
-  });
 
-  return () => off(chequeosRef, 'value', fetchChequeos);
-}, [amigoId]);
+    return () => {
+      off(chequeosRef, 'value', fetchChequeos);
+    };
+  }, [amigoId]);
 
-  const getRiskColor = (nivelRiesgo) => {
-    switch(nivelRiesgo?.toLowerCase()) {
-      case 'alto':
-        return '#e74c3c';
-      case 'moderado':
-        return '#f39c12';
-      case 'bajo':
-        return '#27ae60';
-      default:
-        return '#3498db';
+  // Funciones auxiliares para mostrar preguntas y respuestas
+  const obtenerTextoPregunta = (idPregunta) => {
+    const preguntas = {
+      actividadSexual: '1. ¿Has tenido actividad sexual en los últimos 6 meses?',
+      parejasRecientes: '2. ¿Has tenido más de una pareja sexual en el último año?',
+      proteccion: '3. ¿Utilizas protección (preservativo) en tus relaciones sexuales?',
+      sintomas: '4. ¿Has experimentado alguno de estos síntomas recientemente? (Secreción inusual, dolor al orinar, llagas o verrugas genitales, picazón)',
+      historialETS: '5. ¿Te han diagnosticado alguna ETS anteriormente?',
+      chequeosPrevios: '6. ¿Cuándo fue tu último chequeo de ETS?'
+    };
+    return preguntas[idPregunta] || idPregunta;
+  };
+
+  const obtenerTextoRespuesta = (idPregunta, respuesta) => {
+    const opciones = {
+      actividadSexual: { si: 'Sí', no: 'No' },
+      parejasRecientes: { si: 'Sí', no: 'No' },
+      proteccion: { siempre: 'Siempre', a_veces: 'A veces', nunca: 'Nunca' },
+      sintomas: { si: 'Sí', no: 'No' },
+      historialETS: { si: 'Sí', no: 'No' },
+      chequeosPrevios: {
+        menos_6_meses: 'Hace menos de 6 meses',
+        "6_a_12_meses": 'Hace 6 a 12 meses',
+        mas_1_ano: 'Hace más de 1 año',
+        nunca: 'Nunca me he hecho uno'
+      }
+    };
+    return opciones[idPregunta]?.[respuesta] || respuesta;
+  };
+
+  const getColorByRisk = (nivel) => {
+    switch((nivel || '').toUpperCase()) {
+      case 'ALTO': return '#e74c3c';
+      case 'MODERADO': return '#f39c12';
+      default: return '#27ae60';
     }
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.tarjetaChequeo}>
-      <Text style={styles.fechaChequeo}>
-        {new Date(item.fecha).toLocaleDateString()}
+    <TouchableOpacity 
+      style={[
+        styles.chequeoCard,
+        { borderLeftColor: getColorByRisk(item.nivelRiesgo) }
+      ]}
+      onPress={() => { setChequeoSeleccionado(item); setModalVisible(true); }}
+    >
+      <Text style={styles.fecha}>
+        {item.fecha ? new Date(item.fecha).toLocaleDateString('es-MX', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'Sin fecha'}
       </Text>
-      <Text style={[styles.nivelRiesgo, { color: getRiskColor(item.nivelRiesgo) }]}>
-        Nivel de riesgo: {item.nivelRiesgo}
-      </Text>
-      <Text style={styles.detalleChequeo}>Puntaje: {item.puntaje}</Text>
-      {item.recomendacion && (
-        <Text style={styles.recomendacion}>{item.recomendacion}</Text>
-      )}
-    </View>
+      <View style={styles.detallesContainer}>
+        <Text style={[
+          styles.nivelRiesgo, 
+          { color: getColorByRisk(item.nivelRiesgo) }
+        ]}>
+          {item.nivelRiesgo}
+        </Text>
+        <Text style={styles.puntaje}>Puntaje: {item.puntaje}</Text>
+      </View>
+    </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f9fc' }}>
-    <View style={styles.container}>
-      <Text style={styles.titulo}>Chequeos de {nombreAmigo}</Text>
-      
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
-        </View>
-      ) : chequeos.length === 0 ? (
-        <Text style={styles.sinChequeos}>No hay chequeos registrados</Text>
-      ) : (
-        <FlatList
-          data={chequeos}
-          renderItem={renderItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContainer}
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+      <View style={styles.container}>
+        <ScrollView style={styles.scrollContainer}>
+          <Text style={styles.titulo}>Chequeos de {nombreAmigo}</Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6200EE" />
+            </View>
+          ) : chequeos.length === 0 ? (
+            <Text style={styles.sinResultados}>No hay chequeos registrados</Text>
+          ) : (
+            chequeos.map(item => renderItem({ item }))
+          )}
+        </ScrollView>
+        <Button
+          title="Volver"
+          onPress={() => setScreen('ListaAmigos')}
+          color="#757575"
         />
-      )}
-      
-      <Button
-        title="Volver"
-        onPress={() => setScreen('ListaAmigos')}
-        color="#3498db"
-      />
-    </View>
-   </SafeAreaView>
+
+        {/* Modal para mostrar detalles */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              {chequeoSeleccionado && (
+                <>
+                  <Text style={styles.modalTitulo}>Detalles de la Encuesta</Text>
+                  <Text style={styles.modalFecha}>
+                    Fecha: {chequeoSeleccionado.fecha ? new Date(chequeoSeleccionado.fecha).toLocaleString() : 'Sin fecha'}
+                  </Text>
+                  <ScrollView style={styles.modalScroll}>
+                    {chequeoSeleccionado.respuestas && Object.entries(chequeoSeleccionado.respuestas).map(([pregunta, respuesta]) => (
+                      <View key={pregunta} style={styles.respuestaItem}>
+                        <Text style={styles.preguntaTexto}>{obtenerTextoPregunta(pregunta)}</Text>
+                        <Text style={styles.respuestaTexto}>{obtenerTextoRespuesta(pregunta, respuesta)}</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                  <View style={styles.modalFooter}>
+                    <Button
+                      title="Cerrar"
+                      onPress={() => setModalVisible(false)}
+                      color="#6200EE"
+                    />
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5'
+  },
+  scrollContainer: {
     padding: 20,
-    backgroundColor:' #7193ad',
-  },
-  listContainer: {
-    paddingBottom: 20,
-  },
-  titulo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  tarjetaChequeo: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  fechaChequeo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#3498db',
-    marginBottom: 5,
-  },
-  nivelRiesgo: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 5,
-  },
-  detalleChequeo: {
-    fontSize: 14,
-    color: '#34495e',
-    marginBottom: 5,
-  },
-  recomendacion: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    color: '#7f8c8d',
-    marginTop: 5,
-  },
-  sinChequeos: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#7f8c8d',
-    marginTop: 20,
+    paddingBottom: 10
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
+  titulo: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#2c3e50',
+    textAlign: 'center'
+  },
+  sinResultados: {
+    textAlign: 'center',
+    color: '#7f8c8d',
+    marginTop: 20
+  },
+  chequeoCard: {
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2
+  },
+  fecha: {
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#34495e'
+  },
+  detallesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  nivelRiesgo: {
+    fontWeight: 'bold',
+    fontSize: 16
+  },
+  puntaje: {
+    color: '#7f8c8d'
+  },
+  // Estilos del modal
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)'
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%'
+  },
+  modalTitulo: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#2c3e50',
+    textAlign: 'center'
+  },
+  modalFecha: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 15,
+    textAlign: 'center'
+  },
+  modalScroll: {
+    maxHeight: '70%',
+    marginBottom: 15
+  },
+  respuestaItem: {
+    marginBottom: 15,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1'
+  },
+  preguntaTexto: {
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 5
+  },
+  respuestaTexto: {
+    color: '#3498db'
+  },
+  modalFooter: {
+    marginTop: 10
+  }
 });
 
-export default ChequeosAmigo;
+export default Chequeoamigos;
