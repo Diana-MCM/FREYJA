@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput, Alert, ImageBackground, SafeAreaView } from 'react-native';
+import { View, Text, Button, TextInput, Alert, ImageBackground } from 'react-native';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import PantallaInicio from './componentes/iniciarsesion';
 import RegistroDeUsuario from './componentes/RegistroDeUsuario';
@@ -19,6 +19,11 @@ import Encuestas from './componentes/Encuestas';
 import Chequeo from './componentes/Chequeo';
 import QRusuarios from './componentes/QRusuarios';
 import Chequeoamigos from './componentes/Chequeoamigos';
+import Consentimiento from './componentes/Consentimiento';
+import Historialits from './componentes/Historialits';
+import Interesessexuales from './componentes/Interesessexuales';
+import Regularchequeo from './componentes/Regularchequeo';
+import BDSM from './componentes/BDSM';
 
 // Componente de carga inicial
 const LoadingScreen = () => (
@@ -171,117 +176,150 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'rgba(234, 231, 241, 0.29)' }}>
-      <View style={{ flex: 1 }}>
-        {screen === 'Inicio' && (
-          <PantallaInicio
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-            cerrarSesion={cerrarSesion}
-          />
-        )}
-        {screen === 'IniciarSesion' && (
-          <IniciarSesion
-            setScreen={handleSetScreen}
-            setNombreUsuario={setNombreUsuario}
-          />
-        )}
-        {screen === 'RegistroDeUsuario' && (
-          <RegistroDeUsuario
-            setScreen={handleSetScreen}
-            setNombreUsuario={setNombreUsuario}
-          />
-        )}
-        {screen === 'DatosPersonales' && (
-          <DatosPersonales
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-          />
-        )}
-        {screen === 'VistaDatos' && (
-          <VistaDatos
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-          />
-        )}
-        {screen === 'Calendario' && (
-          <Calendario
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-          />
-        )}
-        {screen === 'Busqueda' && (
-          <Busqueda
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-          />
-        )}
-        {screen === 'ListaAmigos' && (
-          <ListaAmigos
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-          />
-        )}
-        {screen === 'Encuestas' && (
-          <Encuestas
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-            userId={userId}
-          />
-        )}
-        {screen === 'Chequeo' && (
-          <Chequeo
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-            userId={userId}
-          />
-        )}
-        {screen === 'Notificaciones' && (
-          <Notificaciones
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-          />
-        )}
-        {screen === 'SolicitudesAmistad' && (
-          <SolicitudesAmistad
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-          />
-        )}
-        {screen === 'Subirinformacion' && (
-          <Subirinformacion
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-          />
-        )}
-        {screen === 'Carpetas' && (
-          <Carpetas
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-            params={screenParams}
-          />
-        )}
-        {screen === 'QRusuarios' && (
-          <QRusuarios
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-            params={screenParams || {}}
-          />
-        )}
-        {screen === 'GestionMedicamentos' && (
-          <GestionMedicamentos
-            setScreen={handleSetScreen}
-            nombreUsuario={nombreUsuario}
-            params={screenParams}
-          />
-        )}
-        {screen === 'Chequeoamigos' && (
-          <Chequeoamigos
-            setScreen={handleSetScreen}
-            route={{ params: screenParams || {} }}
-          />
-        )}
-      </View>
-    </SafeAreaView>
+    <View style={{ flex: 1, backgroundColor: 'rgba(234, 231, 241, 0.29)' }}>
+      {screen === 'Inicio' && (
+        <PantallaInicio
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+          cerrarSesion={cerrarSesion}
+        />
+      )}
+      {screen === 'IniciarSesion' && (
+        <IniciarSesion
+          setScreen={handleSetScreen}
+          setNombreUsuario={setNombreUsuario}
+        />
+      )}
+      {screen === 'RegistroDeUsuario' && (
+        <RegistroDeUsuario
+          setScreen={handleSetScreen}
+          setNombreUsuario={setNombreUsuario}
+        />
+      )}
+      {screen === 'DatosPersonales' && (
+        <DatosPersonales
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'VistaDatos' && (
+        <VistaDatos
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'Calendario' && (
+        <Calendario
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'Busqueda' && (
+        <Busqueda
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'ListaAmigos' && (
+        <ListaAmigos
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'Encuestas' && (
+        <Encuestas
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+          userId={userId}
+        />
+      )}
+      {screen === 'Chequeo' && (
+        <Chequeo
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+          userId={userId}
+        />
+      )}
+      {screen === 'Notificaciones' && (
+        <Notificaciones
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'SolicitudesAmistad' && (
+        <SolicitudesAmistad
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'Subirinformacion' && (
+        <Subirinformacion
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'Carpetas' && (
+        <Carpetas
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+          params={screenParams}
+        />
+      )}
+      {screen === 'QRusuarios' && (
+        <QRusuarios
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+          params={screenParams || {}}
+        />
+      )}
+      {screen === 'GestionMedicamentos' && (
+        <GestionMedicamentos
+          setScreen={handleSetScreen}
+          nombreUsuario={nombreUsuario}
+          params={screenParams}
+        />
+      )}
+      {screen === 'Chequeoamigos' && (
+        <Chequeoamigos
+          setScreen={handleSetScreen}
+          route={{ params: screenParams || {} }}
+        />
+      )}
+      {screen === 'Consentimiento' && (
+        <Consentimiento
+          setScreen={handleSetScreen}
+          userId={userId}  // Pasar directamente
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'Historialits' && (
+        <Historialits
+          setScreen={handleSetScreen}
+          userId={userId}  // Pasar directamente
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'Interesessexuales' && (
+        <Interesessexuales
+          setScreen={handleSetScreen}
+          userId={userId}  // Pasar directamente
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'Regularchequeo' && (
+        <Regularchequeo
+          setScreen={handleSetScreen}
+          userId={userId}  // Pasar directamente
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'BDSM' && (
+        <BDSM
+          setScreen={handleSetScreen}
+          userId={userId}  // Pasar directamente
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+    </View>
   );
 }

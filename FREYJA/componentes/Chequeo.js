@@ -6,40 +6,53 @@ import { app } from '../firebase/firebase';
 const db = getDatabase(app);
 
 const HistorialChequeos = ({ userId, setScreen }) => {
-  const [chequeos, setChequeos] = useState([]);
+  const [resultados, setResultados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [encuestaSeleccionada, setEncuestaSeleccionada] = useState(null);
 
   useEffect(() => {
-    const chequeosRef = ref(db, `usuarios/${userId}/chequeos`);
+    const rutas = [
+      { nombre: 'Chequeo de ETS', path: `usuarios/${userId}/chequeos` },
+      { nombre: 'Historial de ETS', path: `usuarios/${userId}/historialITS` },
+      { nombre: 'Preferencias Íntimas', path: `usuarios/${userId}/consentimiento` },
+      { nombre: 'Intereses Sexuales', path: `usuarios/${userId}/interesesSexuales` },
+      { nombre: 'Preferencias BDSM', path: `usuarios/${userId}/preferenciasBDSM` }
+    ];
 
-    const onDataChange = (snapshot) => {
-      const chequeosData = [];
-      
-      snapshot.forEach((childSnapshot) => {
-        chequeosData.push({
-          id: childSnapshot.key,
-          ...childSnapshot.val()
+    let isMounted = true;
+    let allResults = [];
+
+    setLoading(true);
+
+    const listeners = rutas.map(({ nombre, path }) => {
+      const refRuta = ref(db, path);
+      const listener = onValue(refRuta, (snapshot) => {
+        if (!isMounted) return;
+        let data = [];
+        snapshot.forEach((child) => {
+          data.push({
+            id: child.key,
+            ...child.val(),
+            tipo: nombre
+          });
         });
+        // Elimina resultados anteriores de este tipo y agrega los nuevos
+        allResults = allResults.filter(r => r.tipo !== nombre).concat(data);
+        setResultados([...allResults]);
+        setLoading(false);
       });
+      return { refRuta, listener };
+    });
 
-      setChequeos(chequeosData);
-      setLoading(false);
+    return () => {
+      isMounted = false;
+      listeners.forEach(({ refRuta, listener }) => off(refRuta, 'value', listener));
     };
-
-    const onError = (error) => {
-      console.error("Error al cargar historial:", error);
-      setLoading(false);
-    };
-
-    const unsubscribe = onValue(chequeosRef, onDataChange, onError);
-
-    return () => off(chequeosRef, 'value', onDataChange);
   }, [userId]);
 
-  const abrirModal = (chequeo) => {
-    setEncuestaSeleccionada(chequeo);
+  const abrirModal = (encuesta) => {
+    setEncuestaSeleccionada(encuesta);
     setModalVisible(true);
   };
 
@@ -54,40 +67,58 @@ const HistorialChequeos = ({ userId, setScreen }) => {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollContainer}>
-        <Text style={styles.titulo}>Historial de Chequeos</Text>
-        
-        {chequeos.length === 0 ? (
-          <Text style={styles.sinResultados}>No hay chequeos registrados</Text>
+        <Text style={styles.titulo}>Historial de Cuestionarios</Text>
+        {resultados.length === 0 ? (
+          <Text style={styles.sinResultados}>No hay cuestionarios registrados</Text>
         ) : (
-          chequeos.map(chequeo => (
-            <TouchableOpacity 
-              key={chequeo.id} 
-              style={[
-                styles.chequeoCard,
-                { borderLeftColor: getColorByRisk(chequeo.nivelRiesgo) }
-              ]}
-              onPress={() => abrirModal(chequeo)}
-            >
-              <Text style={styles.fecha}>
-                {new Date(chequeo.fecha).toLocaleDateString('es-MX', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </Text>
-              <View style={styles.detallesContainer}>
-                <Text style={[
-                  styles.nivelRiesgo, 
-                  { color: getColorByRisk(chequeo.nivelRiesgo) }
-                ]}>
-                  {chequeo.nivelRiesgo}
+          resultados
+            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)) // Más recientes primero
+            .map((encuesta) => (
+              <TouchableOpacity
+                key={encuesta.id}
+                style={[
+                  styles.chequeoCard,
+                  encuesta.tipo === 'Chequeo de ETS'
+                    ? { borderLeftColor: getColorByRisk(encuesta.nivelRiesgo) }
+                    : { borderLeftColor: getColorByTipo(encuesta.tipo) }
+                ]}
+                onPress={() => abrirModal(encuesta)}
+              >
+                <Text style={styles.fecha}>
+                  {encuesta.fecha
+                    ? new Date(encuesta.fecha).toLocaleDateString('es-MX', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    : 'Sin fecha'}
                 </Text>
-                <Text style={styles.puntaje}>Puntaje: {chequeo.puntaje}</Text>
-              </View>
-            </TouchableOpacity>
-          ))
+                <View style={styles.detallesContainer}>
+                  <Text
+                    style={[
+                      styles.nivelRiesgo,
+                      encuesta.tipo === 'Chequeo de ETS'
+                        ? { color: getColorByRisk(encuesta.nivelRiesgo) }
+                        : { color: getColorByTipo(encuesta.tipo) }
+                    ]}
+                  >
+                    {encuesta.tipo}
+                  </Text>
+                  {/* Mostrar nivel de riesgo solo para Chequeo de ETS */}
+                  {encuesta.tipo === 'Chequeo de ETS' && encuesta.nivelRiesgo && (
+                    <Text style={{
+                      color: getColorByRisk(encuesta.nivelRiesgo),
+                      fontWeight: 'bold',
+                      marginLeft: 10
+                    }}>
+                      Riesgo: {encuesta.nivelRiesgo}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))
         )}
       </ScrollView>
 
@@ -108,20 +139,36 @@ const HistorialChequeos = ({ userId, setScreen }) => {
           <View style={styles.modalContent}>
             {encuestaSeleccionada && (
               <>
-                <Text style={styles.modalTitulo}>Detalles de la Encuesta</Text>
+                <Text style={styles.modalTitulo}>Detalles de {encuestaSeleccionada.tipo}</Text>
                 <Text style={styles.modalFecha}>
-                  Fecha: {new Date(encuestaSeleccionada.fecha).toLocaleString()}
+                  Fecha: {encuestaSeleccionada.fecha ? new Date(encuestaSeleccionada.fecha).toLocaleString() : 'Sin fecha'}
                 </Text>
-                
+                {/* Banner de riesgo solo para Chequeo de ETS */}
+                {encuestaSeleccionada.tipo === 'Chequeo de ETS' && encuestaSeleccionada.nivelRiesgo && (
+                  <View style={[
+                    styles.riesgoBanner,
+                    { borderColor: getColorByRisk(encuestaSeleccionada.nivelRiesgo) }
+                  ]}>
+                    <Text style={[
+                      styles.riesgoBannerText,
+                      { color: getColorByRisk(encuestaSeleccionada.nivelRiesgo) }
+                    ]}>
+                      Riesgo: {encuestaSeleccionada.nivelRiesgo}
+                    </Text>
+                  </View>
+                )}
                 <ScrollView style={styles.modalScroll}>
-                  {Object.entries(encuestaSeleccionada.respuestas).map(([pregunta, respuesta]) => (
-                    <View key={pregunta} style={styles.respuestaItem}>
-                      <Text style={styles.preguntaTexto}>{obtenerTextoPregunta(pregunta)}</Text>
-                      <Text style={styles.respuestaTexto}>{obtenerTextoRespuesta(pregunta, respuesta)}</Text>
-                    </View>
-                  ))}
+                  {/* Aquí puedes mostrar las respuestas según el tipo */}
+                  {encuestaSeleccionada.respuestas
+                    ? Object.entries(encuestaSeleccionada.respuestas).map(([pregunta, respuesta]) => (
+                        <View key={pregunta} style={styles.respuestaItem}>
+                          <Text style={styles.preguntaTexto}>{pregunta}</Text>
+                          <Text style={styles.respuestaTexto}>{JSON.stringify(respuesta)}</Text>
+                        </View>
+                      ))
+                    : <Text>No hay respuestas registradas.</Text>
+                  }
                 </ScrollView>
-
                 <View style={styles.modalFooter}>
                   <Button
                     title="Cerrar"
@@ -138,51 +185,16 @@ const HistorialChequeos = ({ userId, setScreen }) => {
   );
 };
 
-// Funciones auxiliares para mostrar preguntas y respuestas
-const obtenerTextoPregunta = (idPregunta) => {
-  const preguntas = {
-    actividadSexual: '1. ¿Has tenido actividad sexual en los últimos 6 meses?',
-    parejasRecientes: '2. ¿Has tenido más de una pareja sexual en el último año?',
-    proteccion: '3. ¿Utilizas protección (preservativo) en tus relaciones sexuales?',
-    sintomas: '4. ¿Has experimentado alguno de estos síntomas recientemente? (Secreción inusual, dolor al orinar, llagas o verrugas genitales, picazón)',
-    historialETS: '5. ¿Te han diagnosticado alguna ETS anteriormente?',
-    chequeosPrevios: '6. ¿Cuándo fue tu último chequeo de ETS?'
-  };
-  return preguntas[idPregunta] || idPregunta;
-};
-
-const obtenerTextoRespuesta = (idPregunta, respuesta) => {
-  const opciones = {
-    actividadSexual: {
-      si: 'Sí',
-      no: 'No'
-    },
-    parejasRecientes: {
-      si: 'Sí',
-      no: 'No',
-    },
-    proteccion: {
-      siempre: 'Siempre',
-      a_veces: 'A veces',
-      nunca: 'Nunca'
-    },
-    sintomas: {
-      si: 'Sí',
-      no: 'No',
-    },
-    historialETS: {
-      si: 'Sí',
-      no: 'No',
-    },
-    chequeosPrevios: {
-      menos_6_meses: 'Hace menos de 6 meses',
-      "6_a_12_meses": 'Hace 6 a 12 meses',
-      mas_1_ano: 'Hace más de 1 año',
-      nunca: 'Nunca me he hecho uno'
-    }
-  };
-  
-  return opciones[idPregunta]?.[respuesta] || respuesta;
+// Puedes personalizar los colores por tipo de cuestionario
+const getColorByTipo = (tipo) => {
+  switch (tipo) {
+    case 'Chequeo de ETS': return '#27ae60';
+    case 'Historial de ETS': return '#3498db';
+    case 'Preferencias Íntimas': return '#8A2BE2';
+    case 'Intereses Sexuales': return '#4B0082';
+    case 'Preferencias BDSM': return '#dkf402';
+    default: return '#757575';
+  }
 };
 
 const getColorByRisk = (nivel) => {
@@ -274,6 +286,17 @@ const styles = StyleSheet.create({
     color: '#7f8c8d',
     marginBottom: 15,
     textAlign: 'center'
+  },
+  riesgoBanner: {
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 15,
+    alignItems: 'center'
+  },
+  riesgoBannerText: {
+    fontWeight: 'bold',
+    fontSize: 18
   },
   modalScroll: {
     maxHeight: '70%',

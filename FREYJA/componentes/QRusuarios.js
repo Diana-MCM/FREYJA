@@ -23,7 +23,7 @@ const QRusuarios = ({ setScreen, nombreUsuario, params = {} }) => {
         <QRCode
           value={qrData}
           size={250}
-          color="#243573"
+          color='#6200EE'
           backgroundColor="white"
         />
       </View>

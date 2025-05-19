@@ -17,30 +17,70 @@ const Chequeoamigos = ({ route, setScreen }) => {
       return;
     }
     const db = getDatabase();
-    const chequeosRef = ref(db, `usuarios/${amigoId}/chequeos`);
+    const rutas = [
+      { nombre: 'Chequeo de ETS', path: `usuarios/${amigoId}/chequeos` },
+      { nombre: 'Historial de ETS', path: `usuarios/${amigoId}/historialITS` },
+      { nombre: 'Preferencias Íntimas', path: `usuarios/${amigoId}/consentimiento` },
+      { nombre: 'Intereses Sexuales', path: `usuarios/${amigoId}/interesesSexuales` },
+      { nombre: 'Preferencias BDSM', path: `usuarios/${amigoId}/preferenciasBDSM` }
+    ];
 
-    const fetchChequeos = onValue(chequeosRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const chequeosArray = [];
+    let isMounted = true;
+    let allResults = [];
+    setLoading(true);
+
+    const listeners = rutas.map(({ nombre, path }) => {
+      const refRuta = ref(db, path);
+      const listener = onValue(refRuta, (snapshot) => {
+        if (!isMounted) return;
+        let data = [];
         snapshot.forEach((child) => {
-          chequeosArray.push({
+          data.push({
             id: child.key,
-            ...child.val()
+            ...child.val(),
+            tipo: nombre
           });
         });
-        setChequeos(chequeosArray);
-      } else {
-        setChequeos([]);
-      }
-      setLoading(false);
-    }, (error) => {
-      setLoading(false);
+        // Elimina resultados anteriores de este tipo y agrega los nuevos
+        allResults = allResults.filter(r => r.tipo !== nombre).concat(data);
+        setChequeos([...allResults]);
+        setLoading(false);
+      });
+      return { refRuta, listener };
     });
 
     return () => {
-      off(chequeosRef, 'value', fetchChequeos);
+      isMounted = false;
+      listeners.forEach(({ refRuta, listener }) => off(refRuta, 'value', listener));
     };
   }, [amigoId]);
+
+  // Función para obtener color según riesgo (solo para Chequeo de ETS)
+  const getColorByRisk = (nivel) => {
+    switch((nivel || '').toUpperCase()) {
+      case 'ALTO': return '#e74c3c';
+      case 'MODERADO': return '#f39c12';
+      default: return '#27ae60';
+    }
+  };
+
+  // Función para obtener color del borde según tipo de encuesta
+  const getBorderColor = (tipo, nivelRiesgo) => {
+    // Para Chequeo de ETS, usamos los colores de riesgo
+    if (tipo === 'Chequeo de ETS') {
+      return getColorByRisk(nivelRiesgo);
+    }
+    
+    // Asignamos colores fijos para los otros tipos
+    const coloresPorTipo = {
+      'Historial de ETS': '#3498db', // Morado
+      'Preferencias Íntimas': '#8A2BE2', // Azul
+      'Intereses Sexuales': '#4B0082', // Naranja
+      'Preferencias BDSM': '#dkf402'  // Verde turquesa
+    };
+    
+    return coloresPorTipo[tipo] || '#95a5a6'; // Gris por defecto
+  };
 
   // Funciones auxiliares para mostrar preguntas y respuestas
   const obtenerTextoPregunta = (idPregunta) => {
@@ -50,7 +90,15 @@ const Chequeoamigos = ({ route, setScreen }) => {
       proteccion: '3. ¿Utilizas protección (preservativo) en tus relaciones sexuales?',
       sintomas: '4. ¿Has experimentado alguno de estos síntomas recientemente? (Secreción inusual, dolor al orinar, llagas o verrugas genitales, picazón)',
       historialETS: '5. ¿Te han diagnosticado alguna ETS anteriormente?',
-      chequeosPrevios: '6. ¿Cuándo fue tu último chequeo de ETS?'
+      chequeosPrevios: '6. ¿Cuándo fue tu último chequeo de ETS?',
+      // Preguntas BDSM
+      rolIdentificacion: 'Rol con el que te identificas:',
+      practicasInteres: 'Prácticas de interés:',
+      limiteAbsoluto: 'Límites absolutos:',
+      conocimientoSSC: 'Conocimiento de SSC/RACK:',
+      elementosImportantes: 'Elementos importantes en una escena BDSM:',
+      necesidadAftercare: 'Necesidad de aftercare:',
+      participacionComunidades: 'Participación en comunidades BDSM:'
     };
     return preguntas[idPregunta] || idPregunta;
   };
@@ -67,24 +115,55 @@ const Chequeoamigos = ({ route, setScreen }) => {
         "6_a_12_meses": 'Hace 6 a 12 meses',
         mas_1_ano: 'Hace más de 1 año',
         nunca: 'Nunca me he hecho uno'
+      },
+      // Opciones BDSM
+      rolIdentificacion: {
+        dominante: 'Dominante/Domme',
+        sumiso: 'Sumiso/a',
+        switch: 'Switch (ambos roles)',
+        curioso: 'Curioso/a (explorando)'
+      },
+      conocimientoSSC: {
+        si_aplico: 'Sí, los aplico siempre.',
+        he_oido: 'He oído hablar, pero necesito aprender más.',
+        no_conozco: 'No los conozco.'
+      },
+      necesidadAftercare: {
+        si: 'Sí (ej: abrazos, hablar, hidratación).',
+        no_siempre: 'No siempre.',
+        no_seguro: 'No estoy seguro/a.'
+      },
+      participacionComunidades: {
+        si_activamente: 'Sí, activamente.',
+        solo_online: 'Solo en línea.',
+        no_pero_interes: 'No, pero me interesa.'
       }
     };
-    return opciones[idPregunta]?.[respuesta] || respuesta;
-  };
 
-  const getColorByRisk = (nivel) => {
-    switch((nivel || '').toUpperCase()) {
-      case 'ALTO': return '#e74c3c';
-      case 'MODERADO': return '#f39c12';
-      default: return '#27ae60';
+    // Manejar arrays (como practicasInteres)
+    if (Array.isArray(respuesta)) {
+      if (idPregunta === 'practicasInteres') {
+        const practicas = {
+          amarres: 'Amarres (shibari, cuerdas)',
+          juego_poder: 'Juego de poder (humillación leve, órdenes)',
+          impacto: 'Impacto (azotes, palmas, fustas)',
+          sensacion: 'Sensación (cera caliente, hielo, texturas)',
+          roleplay: 'Roleplay (juegos de roles: profesor/alumno, etc.)',
+          otro: 'Otra práctica'
+        };
+        return respuesta.map(p => practicas[p] || p).join(', ');
+      }
+      return respuesta.join(', ');
     }
+
+    return opciones[idPregunta]?.[respuesta] || respuesta;
   };
 
   const renderItem = ({ item }) => (
     <TouchableOpacity 
       style={[
         styles.chequeoCard,
-        { borderLeftColor: getColorByRisk(item.nivelRiesgo) }
+        { borderLeftColor: getBorderColor(item.tipo, item.nivelRiesgo) }
       ]}
       onPress={() => { setChequeoSeleccionado(item); setModalVisible(true); }}
     >
@@ -98,16 +177,38 @@ const Chequeoamigos = ({ route, setScreen }) => {
         }) : 'Sin fecha'}
       </Text>
       <View style={styles.detallesContainer}>
-        <Text style={[
-          styles.nivelRiesgo, 
-          { color: getColorByRisk(item.nivelRiesgo) }
-        ]}>
-          {item.nivelRiesgo}
+        <Text style={[styles.nivelRiesgo, { color: getBorderColor(item.tipo, item.nivelRiesgo) }]}>
+          {item.tipo}
         </Text>
-        <Text style={styles.puntaje}>Puntaje: {item.puntaje}</Text>
+        {/* Mostrar puntaje y nivel de riesgo solo para Chequeo de ETS */}
+        {item.tipo === 'Chequeo de ETS' && item.puntaje && (
+          <Text style={styles.puntaje}>Puntaje: {item.puntaje} ({item.nivelRiesgo})</Text>
+        )}
       </View>
     </TouchableOpacity>
   );
+
+  const renderRespuestas = (respuestas) => {
+    if (!respuestas) return null;
+
+    // Caso especial para BDSM que tiene estructura diferente
+    if (respuestas.respuestas) {
+      return Object.entries(respuestas.respuestas).map(([pregunta, respuesta]) => (
+        <View key={pregunta} style={styles.respuestaItem}>
+          <Text style={styles.preguntaTexto}>{obtenerTextoPregunta(pregunta)}</Text>
+          <Text style={styles.respuestaTexto}>{obtenerTextoRespuesta(pregunta, respuesta)}</Text>
+        </View>
+      ));
+    }
+
+    // Para otros tipos de cuestionarios
+    return Object.entries(respuestas).map(([pregunta, respuesta]) => (
+      <View key={pregunta} style={styles.respuestaItem}>
+        <Text style={styles.preguntaTexto}>{obtenerTextoPregunta(pregunta)}</Text>
+        <Text style={styles.respuestaTexto}>{obtenerTextoRespuesta(pregunta, respuesta)}</Text>
+      </View>
+    ));
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
@@ -141,17 +242,21 @@ const Chequeoamigos = ({ route, setScreen }) => {
             <View style={styles.modalContent}>
               {chequeoSeleccionado && (
                 <>
-                  <Text style={styles.modalTitulo}>Detalles de la Encuesta</Text>
+                  <Text style={styles.modalTitulo}>{chequeoSeleccionado.tipo}</Text>
                   <Text style={styles.modalFecha}>
                     Fecha: {chequeoSeleccionado.fecha ? new Date(chequeoSeleccionado.fecha).toLocaleString() : 'Sin fecha'}
                   </Text>
                   <ScrollView style={styles.modalScroll}>
-                    {chequeoSeleccionado.respuestas && Object.entries(chequeoSeleccionado.respuestas).map(([pregunta, respuesta]) => (
-                      <View key={pregunta} style={styles.respuestaItem}>
-                        <Text style={styles.preguntaTexto}>{obtenerTextoPregunta(pregunta)}</Text>
-                        <Text style={styles.respuestaTexto}>{obtenerTextoRespuesta(pregunta, respuesta)}</Text>
+                    {renderRespuestas(chequeoSeleccionado.respuestas || chequeoSeleccionado)}
+                    {/* Mostrar nivel de riesgo solo para Chequeo de ETS */}
+                    {chequeoSeleccionado.tipo === 'Chequeo de ETS' && chequeoSeleccionado.nivelRiesgo && (
+                      <View style={styles.respuestaItem}>
+                        <Text style={styles.preguntaTexto}>Nivel de riesgo:</Text>
+                        <Text style={[styles.respuestaTexto, { color: getColorByRisk(chequeoSeleccionado.nivelRiesgo) }]}>
+                          {chequeoSeleccionado.nivelRiesgo}
+                        </Text>
                       </View>
-                    ))}
+                    )}
                   </ScrollView>
                   <View style={styles.modalFooter}>
                     <Button
