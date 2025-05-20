@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity, PermissionsAndroid, Modal, Platform } from 'react-native';
-import { getDatabase, ref, query, orderByChild, equalTo, get, update, push, set  } from 'firebase/database';
+import { getDatabase, ref, query, orderByChild, equalTo, get, update, push, set } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import * as Camera from 'expo-camera';
-
-
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 const BuscarAmigos = ({ setScreen }) => {
   const [userIdBusqueda, setUserIdBusqueda] = useState('');
@@ -13,21 +11,23 @@ const BuscarAmigos = ({ setScreen }) => {
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [showQRScanner, setShowQRScanner] = useState(false);
-  const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
 
-  useEffect(() => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (!user) {
-      Alert.alert("Error", "Debes iniciar sesión primero");
-      return false;
-   }
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
+  if (!permission) {
+    // Camera permissions are still loading.
+    return <View />;
+  }
+
+  if (!permission.granted) {
+    // Camera permissions are not granted yet.
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>Necesitamos tu permiso para acceder a la cámara</Text>
+        <Button onPress={requestPermission} title="Conceder permiso" />
+      </View>
+    );
+  }
 
   const buscarAmigo = async (userId) => {
     if (!userId || userId.length !== 10 || !/^\d+$/.test(userId)) {
@@ -99,17 +99,26 @@ const BuscarAmigos = ({ setScreen }) => {
   };
 
   const handleBarCodeScanned = async ({ data }) => {
+    console.log("Datos crudos del QR:", data);
     setScanned(true);
     try {
-      const scannedData = JSON.parse(data);
+      Alert.alert("Datos leídos", `Contenido del QR: ${data}`);
+      let userId;
+      try {
+        const scannedData = JSON.parse(data);
+        userId = scannedData.userId; // Extrae el userId del objeto
+      } catch (e) {
+        // Si no es JSON válido, asume que es directamente el ID
+        userId = data;
+      }
+      if (!userId || userId.length !== 10 || !/^\d+$/.test(userId)) {
+        Alert.alert("Error", "El código QR no contiene un ID de usuario válido (debe tener 10 dígitos)");
+        return;
+      }
       setShowQRScanner(false);
-      if (scannedData.type === 'friend_request' && scannedData.userId) {
-        const success = await buscarAmigo(scannedData.userId);
-        if (success) {
-          Alert.alert("Usuario encontrado", `Se encontró a ${scannedData.userName || 'el usuario'}`);
-        }
-      } else {
-        Alert.alert("Error", "El código QR no contiene información válida de amistad");
+      const success = await buscarAmigo(userId);
+      if (success) {
+        Alert.alert("Usuario encontrado", "Usuario encontrado mediante código QR");
       }
     } catch (error) {
       console.error("Error al procesar QR:", error);
@@ -120,66 +129,65 @@ const BuscarAmigos = ({ setScreen }) => {
   };
 
   const enviarSolicitud = async () => {
-  if (!amigoEncontrado) return;
+    if (!amigoEncontrado) return;
 
-  try {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (!user) {
-      Alert.alert("Error", "Debes iniciar sesión primero");
-      return;
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert("Error", "Debes iniciar sesión primero");
+        return;
+      }
+
+      const db = getDatabase();
+      const solicitudId = push(ref(db, 'solicitudes')).key;
+      
+      const userRef = ref(db, `usuarios/${user.uid}/nombre`);
+      const userSnapshot = await get(userRef);
+      const miNombre = userSnapshot.exists() ? userSnapshot.val() : 'Usuario';
+
+      const solicitudData = {
+        nombre: miNombre,
+        userId: user.uid,
+        fechaSolicitud: new Date().toISOString(),
+        estado: "pendiente"
+      };
+
+      const notificacionData = {
+        titulo: "Nueva solicitud de amistad",
+        mensaje: `${miNombre} te ha enviado una solicitud de amistad`,
+        fecha: new Date().toISOString(),
+        tipo: "solicitud_amistad",
+        userIdOrigen: user.uid,
+        leida: false,
+        metadata: {
+          action: "friendship_request",
+          solicitudId: solicitudId
+        }
+      };
+
+      // Preparamos todas las actualizaciones
+      const updates = {};
+      
+      // 1. Añadir solicitud al receptor
+      updates[`usuarios/${amigoEncontrado.id}/solicitudes/${solicitudId}`] = solicitudData;
+      
+      // 2. Añadir notificación al receptor
+      updates[`usuarios/${amigoEncontrado.id}/notificaciones/${Date.now()}`] = notificacionData;
+      
+      // Ejecutamos todas las actualizaciones atómicamente
+      await update(ref(db), updates);
+
+      Alert.alert("¡Éxito!", `Solicitud enviada a ${amigoEncontrado.nombre}`);
+      setAmigoEncontrado(null);
+      setUserIdBusqueda('');
+    } catch (error) {
+      console.error("Error al enviar solicitud:", error);
+      Alert.alert("Error", "No se pudo enviar la solicitud. Verifica tu conexión.");
     }
-
-    const db = getDatabase();
-    const solicitudId = push(ref(db, 'solicitudes')).key;
-    
-    const userRef = ref(db, `usuarios/${user.uid}/nombre`);
-const userSnapshot = await get(userRef);
-const miNombre = userSnapshot.exists() ? userSnapshot.val() : 'Usuario';
-
-const solicitudData = {
-  nombre: miNombre,
-  userId: user.uid,
-  fechaSolicitud: new Date().toISOString(),
-  estado: "pendiente"
-};
-
-const notificacionData = {
-  titulo: "Nueva solicitud de amistad",
-  mensaje: `${miNombre} te ha enviado una solicitud de amistad`,
-  fecha: new Date().toISOString(),
-  tipo: "solicitud_amistad",
-  userIdOrigen: user.uid,
-  leida: false,
-  metadata: {
-    action: "friendship_request",
-    solicitudId: solicitudId
-  }
-};
-
-    // Preparamos todas las actualizaciones
-    const updates = {};
-    
-    // 1. Añadir solicitud al receptor
-    updates[`usuarios/${amigoEncontrado.id}/solicitudes/${solicitudId}`] = solicitudData;
-    
-    // 2. Añadir notificación al receptor
-    updates[`usuarios/${amigoEncontrado.id}/notificaciones/${Date.now()}`] = notificacionData;
-    
-    // Ejecutamos todas las actualizaciones atómicamente
-    await update(ref(db), updates);
-
-    Alert.alert("¡Éxito!", `Solicitud enviada a ${amigoEncontrado.nombre}`);
-    setAmigoEncontrado(null);
-    setUserIdBusqueda('');
-  } catch (error) {
-    console.error("Error al enviar solicitud:", error);
-    Alert.alert("Error", "No se pudo enviar la solicitud. Verifica tu conexión.");
-  }
-};
+  };
 
   return (
-    
     <View style={styles.container}>
       <Text style={styles.titulo}>Buscar Amigos</Text>
 
@@ -207,32 +215,24 @@ const notificacionData = {
           onRequestClose={() => setShowQRScanner(false)}
         >
           <View style={styles.qrScannerContainer}>
-            {hasPermission ? (
-              <Camera
-                style={styles.camera}
-                onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-                barCodeScannerSettings={{
-                barCodeTypes: ['qr'],
-                 }}
-              >
-
-                <View style={styles.overlay}>
-                  <View style={styles.border} />
-                  <Text style={styles.scanText}>Escanea un código QR de amigo</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setShowQRScanner(false)}
-                >
-                  <Icon name="close" size={30} color="white" />
-                </TouchableOpacity>
-              </Camera>
-            ) : (
-              <View style={styles.permissionDenied}>
-                <Text style={styles.permissionText}>Permiso de cámara no concedido</Text>
-                <Button title="Cerrar" onPress={() => setShowQRScanner(false)} />
+            <CameraView
+              style={styles.camera}
+              onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+              barcodeScannerSettings={{
+                barcodeTypes: ['qr'],
+              }}
+            >
+              <View style={styles.overlay}>
+                <View style={styles.border} />
+                <Text style={styles.scanText}>Escanea un código QR de amigo</Text>
               </View>
-            )}
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowQRScanner(false)}
+              >
+                <Icon name="close" size={30} color="white" />
+              </TouchableOpacity>
+            </CameraView>
           </View>
         </Modal>
       )}
@@ -280,7 +280,7 @@ const notificacionData = {
 };
 
 const styles = StyleSheet.create({
-   container: {
+  container: {
     flex: 1,
     padding: 20,
     backgroundColor: '#F5F5F5'
@@ -433,8 +433,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     marginBottom: 20
+  },
+  message: {
+    textAlign: 'center',
+    marginBottom: 20,
+    fontSize: 16
   }
-
 });
 
 export default BuscarAmigos;
