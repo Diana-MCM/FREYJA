@@ -2,16 +2,32 @@ import React from 'react';
 import { View, Text, StyleSheet, Button } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref, set } from 'firebase/database';
+import { getDatabase, ref, onValue } from 'firebase/database';
 
 const QRusuarios = ({ setScreen, nombreUsuario, params = {} }) => {
   const auth = getAuth();
   const user = auth.currentUser;
-  
+  const [userId10digitos, setUserId10digitos] = React.useState(null);
+
+  // Obtener el ID de 10 dígitos de la base de datos
+  React.useEffect(() => {
+    if (user) {
+      const db = getDatabase();
+      const userRef = ref(db, `usuarios/${user.uid}`);
+      
+      onValue(userRef, (snapshot) => {
+        const userData = snapshot.val();
+        if (userData && userData.userId) {
+          setUserId10digitos(userData.userId);
+        }
+      });
+    }
+  }, [user]);
+
   // Datos que se codificarán en el QR
   const qrData = JSON.stringify({
     type: 'friend_request',
-    userId: user.uid,
+    userId: userId10digitos || user?.uid, // Usar el ID de 10 dígitos o el UID como fallback
     userName: params.userName || 'Usuario'
   });
 
@@ -33,7 +49,7 @@ const QRusuarios = ({ setScreen, nombreUsuario, params = {} }) => {
         title="Volver al Inicio"
         onPress={() => setScreen('Inicio')}
         color="#757575"
-     />
+      />
     </View>
   );
 };
@@ -63,7 +79,13 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     marginTop: 20,
-    marginBottom: 30
+    marginBottom: 10
+  },
+  userIdText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 20
   }
 });
 
