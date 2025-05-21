@@ -24,6 +24,7 @@ import Historialits from './componentes/Historialits';
 import Interesessexuales from './componentes/Interesessexuales';
 import Regularchequeo from './componentes/Regularchequeo';
 import BDSM from './componentes/BDSM';
+import Citasmodal from './componentes/Citasmodal';
 
 // Componente de carga inicial
 const LoadingScreen = () => (
@@ -315,6 +316,13 @@ export default function App() {
       )}
       {screen === 'BDSM' && (
         <BDSM
+          setScreen={handleSetScreen}
+          userId={userId}  // Pasar directamente
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'Citasmodal' && (
+        <Citasmodal
           setScreen={handleSetScreen}
           userId={userId}  // Pasar directamente
           nombreUsuario={nombreUsuario}

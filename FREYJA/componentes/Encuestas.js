@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const Encuestas = ({ setScreen, nombreUsuario, userId }) => {
   const cuestionarios = [
@@ -60,6 +61,13 @@ const Encuestas = ({ setScreen, nombreUsuario, userId }) => {
             <Text style={styles.fraseBoton}>{cuestionario.frase}</Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity 
+        style={styles.backButton}
+        onPress={() => setScreen('Inicio')}
+      >
+        <MaterialIcons name="arrow-back" size={20} color="white" />
+        <Text style={styles.backButtonText}>Volver al Inicio</Text>
+      </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -110,7 +118,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#757575',
     fontStyle: 'italic'
-  }
+  },
+  backButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6200EE',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 20,
+  },
 });
 
 export default Encuestas;

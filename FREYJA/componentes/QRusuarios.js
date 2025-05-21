@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, StyleSheet, Button,TouchableOpacity } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, onValue } from 'firebase/database';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const QRusuarios = ({ setScreen, nombreUsuario, params = {} }) => {
   const auth = getAuth();
@@ -45,11 +46,13 @@ const QRusuarios = ({ setScreen, nombreUsuario, params = {} }) => {
       </View>
       
       <Text style={styles.infoText}>Comparte este código para recibir solicitudes de amistad</Text>
-      <Button
-        title="Volver al Inicio"
+      <TouchableOpacity 
+        style={styles.backButton}
         onPress={() => setScreen('Inicio')}
-        color="#757575"
-      />
+      >
+        <MaterialIcons name="arrow-back" size={20} color="white" />
+        <Text style={styles.backButtonText}>Volver al Inicio</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -60,7 +63,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#A89CC8'
+    backgroundColor: 'rgba(171, 163, 247, 0.89)' 
   },
   title: {
     fontSize: 24,
@@ -86,7 +89,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 20
-  }
+  },
+  backButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6200EE',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 20,
+  },
 });
 
 export default QRusuarios;
