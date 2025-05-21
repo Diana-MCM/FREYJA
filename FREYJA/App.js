@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput, Alert, ImageBackground } from 'react-native';
+import { View, Text, Button, TextInput, Alert, ImageBackground, TouchableOpacity} from 'react-native';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import PantallaInicio from './componentes/iniciarsesion';
 import RegistroDeUsuario from './componentes/RegistroDeUsuario';
@@ -25,6 +25,7 @@ import Interesessexuales from './componentes/Interesessexuales';
 import Regularchequeo from './componentes/Regularchequeo';
 import BDSM from './componentes/BDSM';
 import Citasmodal from './componentes/Citasmodal';
+import Sugerencias from './componentes/Sugerencias';
 
 // Componente de carga inicial
 const LoadingScreen = () => (
@@ -114,16 +115,49 @@ const IniciarSesion = ({ setScreen, setNombreUsuario }) => {
             backgroundColor: 'white'
           }}
         />
-        <Button
-          title="Entrar"
-          onPress={handleLogin}
-          disabled={loading}
-        />
-        <Button
-          title="Registrarse"
-          onPress={() => setScreen('RegistroDeUsuario')}
-          disabled={loading}
-        />
+        <TouchableOpacity
+  onPress={handleLogin}
+  disabled={loading}
+  style={{
+    backgroundColor: 'rgba(41, 63, 54, 0.44)',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    marginTop: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5
+  }}
+>
+  <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
+    Entrar
+  </Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => setScreen('RegistroDeUsuario')}
+  disabled={loading}
+  style={{
+    backgroundColor: 'rgba(41, 63, 54, 0.44)',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5
+  }}
+>
+  <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
+    Registrarse
+  </Text>
+</TouchableOpacity>
+
       </View>
     </ImageBackground>
   );
@@ -177,7 +211,7 @@ export default function App() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'rgba(234, 231, 241, 0.29)' }}>
+    <View style={{ flex: 1, backgroundColor: 'rgba(234, 231, 241, 0.6)' }}>
       {screen === 'Inicio' && (
         <PantallaInicio
           setScreen={handleSetScreen}
@@ -323,6 +357,13 @@ export default function App() {
       )}
       {screen === 'Citasmodal' && (
         <Citasmodal
+          setScreen={handleSetScreen}
+          userId={userId}  // Pasar directamente
+          nombreUsuario={nombreUsuario}
+        />
+      )}
+      {screen === 'Sugerencias' && (
+        <Sugerencias
           setScreen={handleSetScreen}
           userId={userId}  // Pasar directamente
           nombreUsuario={nombreUsuario}

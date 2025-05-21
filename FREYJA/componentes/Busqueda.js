@@ -99,10 +99,8 @@ const BuscarAmigos = ({ setScreen }) => {
   };
 
   const handleBarCodeScanned = async ({ data }) => {
-    console.log("Datos crudos del QR:", data);
     setScanned(true);
     try {
-      Alert.alert("Datos leídos", `Contenido del QR: ${data}`);
       let userId;
       try {
         const scannedData = JSON.parse(data);

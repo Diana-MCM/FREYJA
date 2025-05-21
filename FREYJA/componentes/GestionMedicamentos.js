@@ -10,10 +10,10 @@ const GestionMedicamentos = ({ visible, onClose, onSave }) => {
   const [dosisMedicamento, setDosisMedicamento] = useState('');
   const [listaMedicamentos, setListaMedicamentos] = useState([]);
   const [cargando, setCargando] = useState(true);
+  
   useEffect(() => {
     const cargarMedicamentos = async () => {
       try {
-        //const auth = getAuth();
         const user = auth.currentUser; 
         if (!user) return;
         const db = getDatabase();
@@ -39,6 +39,7 @@ const GestionMedicamentos = ({ visible, onClose, onSave }) => {
       cargarMedicamentos();
     }
   }, [visible]);
+  
   const agregarMedicamento = () => {
     if (nombreMedicamento.trim() === '' || dosisMedicamento.trim() === '') {
       Alert.alert("Error", "Por favor complete todos los campos");
@@ -49,11 +50,10 @@ const GestionMedicamentos = ({ visible, onClose, onSave }) => {
     setNombreMedicamento('');
     setDosisMedicamento('');
   };
+  
   const guardarMedicamentos = async () => {
     try {
-      //const auth = getAuth();
       const user = auth.currentUser;
-      
       if (!user) return;
 
       const db = getDatabase();
@@ -154,7 +154,6 @@ const GestionMedicamentos = ({ visible, onClose, onSave }) => {
             <TouchableOpacity 
               style={[styles.boton, styles.botonGuardar]}
               onPress={guardarMedicamentos}
-              disabled={listaMedicamentos.length === 0}
             >
               <Text style={styles.textoBoton}>Guardar</Text>
             </TouchableOpacity>

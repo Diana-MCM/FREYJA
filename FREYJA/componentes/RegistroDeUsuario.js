@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert } from 'react-native';
+import { View, Text, TextInput, Button, Alert, ImageBackground,TouchableOpacity} from 'react-native';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase/firebase';
 import {  getDatabase, ref, set, get, runTransaction} from 'firebase/database';
+import imagenFondo from './imagenes/Freyjaa.png';
 
 const RegistroDeUsuario = ({ setScreen }) => {
   const [email, setEmail] = useState('');
@@ -71,22 +72,29 @@ const handleRegister = async () => {
 };
 
   return (
+    <ImageBackground 
+          source={imagenFondo}
+          style={{ flex: 1, width: '100%', height: '100%' }}
+          resizeMode="cover"
+      >
     <View style={{ 
       flex: 1, 
       justifyContent: 'center', 
-      alignItems: 'center', 
-      backgroundColor: '#A89CC8'
+      alignItems: 'center',  
+      backgroundColor: 'rgba(171, 163, 247, 0.73)',
+      padding: 20
     }}>
-      <Text style={{ fontSize: 30, fontWeight: 'bold', marginBottom: 10 }}>REGISTRO</Text>
+      <Text style={{ fontSize: 60, fontWeight: 'bold', marginBottom: 50 }}>REGISTRO</Text>
       <TextInput
-        placeholder="Nombre completo"
+        placeholder="Usuario"
         value={nombre}
         onChangeText={setNombre}
         style={{ 
           borderWidth: 1, 
+          borderRadius: 15,
           marginBottom: 10, 
-          width: 200, 
-          padding: 5, 
+          width: 300, 
+          padding: 20, 
           backgroundColor: 'white' 
         }}
       />
@@ -98,9 +106,10 @@ const handleRegister = async () => {
         keyboardType="email-address"
         style={{ 
           borderWidth: 1, 
+          borderRadius: 15,
           marginBottom: 10, 
-          width: 200, 
-          padding: 5, 
+          width: 300, 
+          padding: 20, 
           backgroundColor: 'white' 
         }}
       />
@@ -111,23 +120,57 @@ const handleRegister = async () => {
         onChangeText={setPassword}
         style={{ 
           borderWidth: 1, 
+          borderRadius: 15,
           marginBottom: 10, 
-          width: 200, 
-          padding: 5, 
+          width: 300, 
+          padding: 20, 
           backgroundColor: 'white' 
         }}
       />
-      <Button 
-        title="Registrarse" 
+      <TouchableOpacity
         onPress={handleRegister}
         disabled={loading}
-      />
-      <Button 
-        title="Volver" 
+        style={{
+          backgroundColor: '#6200EE',
+          paddingVertical: 10,
+          paddingHorizontal: 60,
+          borderRadius: 10,
+          marginTop: 70,
+          marginBottom: 40,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 3,
+          elevation: 5
+        }}
+      >
+        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
+          Entrar
+        </Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
         onPress={() => setScreen('IniciarSesion')} 
         disabled={loading}
-      />
+        style={{
+          backgroundColor: '#6200EE',
+          paddingVertical: 10,
+          paddingHorizontal: 60,
+          borderRadius: 10,
+          marginBottom: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 3,
+          elevation: 5
+        }}
+      >
+        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
+          Volver 
+        </Text>
+      </TouchableOpacity>
     </View>
+    </ImageBackground>
   );
 };
 
