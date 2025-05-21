@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import Citasmodal from './Citasmodal';
@@ -39,16 +39,42 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
     }
     
     if (finalStatus !== 'granted') {
-      alert('No se otorgaron permisos para notificaciones');
+      Alert.alert('Error', 'No se otorgaron permisos para notificaciones');
       return;
     }
   }
 
-  async function schedulePushNotification(appointment) {
-    const trigger = new Date(appointment.reminderDateTime);
-    const now = new Date();
+  // Actualiza la función schedulePushNotification
+async function schedulePushNotification(appointment) {
+  let reminderDate;
+  
+  // Calcular la fecha de recordatorio basada en el tipo seleccionado
+  if (appointment.reminderType === 'preset') {
+    const timeValue = parseInt(appointment.reminderTime) || 0;
+    const timeUnit = appointment.reminderTime.replace(/[0-9]/g, '').trim();
     
-    if (trigger > now) {
+    reminderDate = new Date(appointment.time);
+    
+    if (timeUnit.includes('minute')) {
+      reminderDate.setMinutes(reminderDate.getMinutes() - timeValue);
+    } else if (timeUnit.includes('hour')) {
+      reminderDate.setHours(reminderDate.getHours() - timeValue);
+    } else if (timeUnit.includes('day')) {
+      reminderDate.setDate(reminderDate.getDate() - timeValue);
+    }
+  } else {
+    // Usar la fecha personalizada directamente
+    reminderDate = new Date(appointment.reminderDateTime);
+  }
+
+  const now = new Date();
+
+  if (reminderDate > now) {
+    console.log("✅ Programando recordatorio para:", reminderDate.toString());
+    try {
+      // Convertir a timestamp en segundos (requerido por Expo)
+      const triggerTimestamp = Math.floor(reminderDate.getTime() / 1000);
+      
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Recordatorio de cita",
@@ -56,28 +82,56 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
           data: { appointmentId: appointment.id },
           sound: 'default',
         },
-        trigger,
+        trigger: {
+          date: triggerTimestamp,
+        },
       });
+    } catch (error) {
+      console.error("Error al programar notificación:", error);
+      Alert.alert("Error", "No se pudo programar el recordatorio");
     }
+  } else {
+    console.log("⚠️ Recordatorio NO programado. Fecha ya pasó:", reminderDate.toString());
+    Alert.alert("Aviso", "La fecha del recordatorio ya ha pasado");
   }
+}
 
-  const handleSaveAppointment = async (newAppointment) => {
-    const appointmentWithId = {
-      ...newAppointment,
-      id: Date.now().toString()
-    };
-    
-    setAppointments(prev => [...prev, appointmentWithId]);
-    setModalVisible(false);
-    
-    if (newAppointment.reminder) {
-      await schedulePushNotification(appointmentWithId);
-    }
+// Actualiza la función handleSaveAppointment
+const handleSaveAppointment = async (newAppointment) => {
+  const appointmentWithId = {
+    ...newAppointment,
+    id: Date.now().toString(),
+    timeString: formatTime(newAppointment.time) // Asegúrate de incluir esto
   };
+  
+  setAppointments(prev => [...prev, appointmentWithId]);
+  setModalVisible(false);
+  
+  if (newAppointment.reminder) {
+    try {
+      await schedulePushNotification(appointmentWithId);
+      Alert.alert('Éxito', 'Cita y recordatorio guardados correctamente');
+    } catch (error) {
+      console.error("Error al programar notificación:", error);
+      Alert.alert('Éxito', 'Cita guardada, pero hubo un error con el recordatorio');
+    }
+  } else {
+    Alert.alert('Éxito', 'Cita guardada correctamente');
+  }
+};
 
+// Añade esta función de formato de hora si no existe
+const formatTime = (date) => {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
   const handleDeleteAppointment = async (id) => {
-    await Notifications.cancelScheduledNotificationAsync(id);
-    setAppointments(prev => prev.filter(app => app.id !== id));
+    try {
+      await Notifications.cancelScheduledNotificationAsync(id);
+      setAppointments(prev => prev.filter(app => app.id !== id));
+      Alert.alert('Éxito', 'Cita eliminada correctamente');
+    } catch (error) {
+      console.error("Error al eliminar notificación:", error);
+    }
   };
 
   const formatDateKey = (date) => {
@@ -200,21 +254,23 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
       {renderDays()}
       
       <Citasmodal 
-          visible={modalVisible} 
-          onClose={() => setModalVisible(false)}
-          selectedDate={selectedDate}
-          appointments={appointments.filter(app => {
-            const appDate = new Date(app.time);
-            return formatDateKey(appDate) === selectedDate;
-          })}
-          onSaveAppointment={(appointment) => {
-            const fullDate = createFullDate(selectedDate, appointment.time);
-            handleSaveAppointment({
-              ...appointment,
-              time: fullDate
-            });
-          }}
-          onDeleteAppointment={handleDeleteAppointment}
+        visible={modalVisible} 
+        onClose={() => setModalVisible(false)}
+        selectedDate={selectedDate}
+        appointments={appointments.filter(app => {
+          const appDate = new Date(app.time);
+          return formatDateKey(appDate) === selectedDate;
+        })}
+        onSaveAppointment={(appointment) => {
+          const fullDate = createFullDate(selectedDate, appointment.time);
+          const fullReminder = new Date(appointment.reminderDateTime);
+          handleSaveAppointment({
+            ...appointment,
+            time: fullDate,
+            reminderDateTime: fullReminder,
+          });
+        }}
+        onDeleteAppointment={handleDeleteAppointment}
       />
       
       <TouchableOpacity 
@@ -228,7 +284,6 @@ const Calendario = ({ setScreen, nombreUsuario }) => {
   );
 };
 
-// TUS ESTILOS ORIGINALES (EXACTAMENTE IGUALES)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

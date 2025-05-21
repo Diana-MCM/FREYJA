@@ -66,31 +66,50 @@ const CitasModal = ({
     }
   };
 
-  const handleSave = () => {
-    if (!newAppointment.title.trim()) {
-      Alert.alert("Error", "Por favor ingresa un título para la cita");
-      return;
-    }
+  // Actualiza la función handleSave
+const handleSave = () => {
+  if (!newAppointment.title.trim()) {
+    Alert.alert("Error", "Por favor ingresa un título para la cita");
+    return;
+  }
 
-    const appointmentToSave = {
-      ...newAppointment,
-      timeString: formatTime(newAppointment.time),
-      id: Date.now().toString()
-    };
-
-    onSaveAppointment(appointmentToSave);
+  // Calcular reminderDateTime para opciones predefinidas
+  if (newAppointment.reminderType === 'preset' && newAppointment.reminderTime !== 'none') {
+    const timeValue = parseInt(newAppointment.reminderTime) || 0;
+    const timeUnit = newAppointment.reminderTime.replace(/[0-9]/g, '').trim();
     
-    setNewAppointment({
-      title: '',
-      time: new Date(),
-      description: '',
-      reminder: true,
-      reminderType: 'preset',
-      reminderTime: '1 day',
-      reminderDateTime: new Date(Date.now() + 24 * 60 * 60 * 1000)
-    });
+    const reminderDate = new Date(newAppointment.time);
+    
+    if (timeUnit.includes('minute')) {
+      reminderDate.setMinutes(reminderDate.getMinutes() - timeValue);
+    } else if (timeUnit.includes('hour')) {
+      reminderDate.setHours(reminderDate.getHours() - timeValue);
+    } else if (timeUnit.includes('day')) {
+      reminderDate.setDate(reminderDate.getDate() - timeValue);
+    }
+    
+    newAppointment.reminderDateTime = reminderDate;
+  }
+
+  const appointmentToSave = {
+    ...newAppointment,
+    timeString: formatTime(newAppointment.time),
+    id: Date.now().toString()
   };
 
+  onSaveAppointment(appointmentToSave);
+  
+  // Restablecer el formulario
+  setNewAppointment({
+    title: '',
+    time: new Date(),
+    description: '',
+    reminder: true,
+    reminderType: 'preset',
+    reminderTime: '1 day',
+    reminderDateTime: new Date(Date.now() + 24 * 60 * 60 * 1000)
+  });
+};
   const renderReminderPicker = () => (
     <View style={styles.reminderSection}>
       <Text style={styles.sectionSubtitle}>Configurar Recordatorio</Text>
