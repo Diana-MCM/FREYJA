@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator } from 'react-native';
-import { Checkbox, Button,RadioButton } from 'react-native-paper';
+import { Checkbox, Button, RadioButton } from 'react-native-paper';
 import { getDatabase, ref, push, set } from 'firebase/database';
 
 const EncuestaPreferenciasIntimas = ({ setScreen, userId }) => {
@@ -67,7 +67,7 @@ const EncuestaPreferenciasIntimas = ({ setScreen, userId }) => {
       await set(encuestaRef, {
         respuestas: { ...respuestas },
         fecha: new Date().toISOString()
-   });
+      });
 
       setMostrarResultado(true);
     } catch (error) {
@@ -178,6 +178,17 @@ const EncuestaPreferenciasIntimas = ({ setScreen, userId }) => {
             )}
           </View>
 
+          {/* Botón para volver a Encuestas */}
+          <Button 
+            mode="contained" 
+            onPress={() => setScreen('Encuestas')}
+            style={styles.botonPrincipal}
+            labelStyle={styles.botonTexto}
+          >
+            Volver a Encuestas
+          </Button>
+
+          {/* Botón existente para volver al inicio */}
           <Button 
             mode="contained" 
             onPress={() => setScreen('Inicio')}
@@ -336,7 +347,7 @@ const EncuestaPreferenciasIntimas = ({ setScreen, userId }) => {
 
         <Button 
           mode="outlined" 
-          onPress={() => setScreen('Inicio')}
+          onPress={() => setScreen('Encuestas')}
           style={styles.botonSecundario}
           labelStyle={styles.botonSecundarioTexto}
         >
@@ -351,7 +362,7 @@ const EncuestaPreferenciasIntimas = ({ setScreen, userId }) => {
   );
 };
 
-// Estilos (igual que en el componente anterior)
+// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,

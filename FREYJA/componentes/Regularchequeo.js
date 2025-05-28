@@ -226,6 +226,7 @@ const guardarEncuestaEnFirebase = async (resultado) => {
           >
             Volver a inicio
           </Button>
+          
           <Text style={styles.notaImportante}>
             NOTA: Esta evaluación no sustituye un diagnóstico médico. Si tienes dudas o síntomas, consulta a un profesional de salud.
           </Text>
@@ -301,6 +302,15 @@ const guardarEncuestaEnFirebase = async (resultado) => {
          >
           Volver al inicio
          </Button>
+
+         <Button 
+                   mode="outlined" 
+                   onPress={() => setScreen('Encuestas')}
+                   style={styles.botonSecundario}
+                   labelStyle={styles.botonSecundarioTexto}
+                 >
+                   Cancelar
+                 </Button>
         <Text style={styles.notaPrivacidad}>
           Estas respuestas las podrán ver tus amigos.
         </Text>
@@ -388,6 +398,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     minWidth: 120,
     marginHorizontal: 5,
+     marginTop: 10,
   },
   botonSecundarioTexto: {
     color: '#6200EE',

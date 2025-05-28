@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity, PermissionsAndroid, Modal, Platform } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity, PermissionsAndroid, Modal, Platform, SafeAreaView } from 'react-native';
 import { getDatabase, ref, query, orderByChild, equalTo, get, update, push, set } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -187,6 +187,7 @@ const BuscarAmigos = ({ setScreen }) => {
 
   return (
     <View style={styles.container}>
+      <SafeAreaView></SafeAreaView>
       <Text style={styles.titulo}>Buscar Amigos</Text>
 
       <View style={styles.tabsContainer}>

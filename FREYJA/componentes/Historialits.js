@@ -291,6 +291,14 @@ const EncuestaHistorialITS = ({ setScreen, userId }) => {
         >
           Volver al inicio
         </Button>
+        <Button 
+                           mode="outlined" 
+                           onPress={() => setScreen('Encuestas')}
+                           style={styles.botonSecundario}
+                           labelStyle={styles.botonSecundarioTexto}
+                         >
+                           Cancelar
+                         </Button>
         
         <Text style={styles.notaPrivacidad}>
           Esta información es confidencial y solo será compartida con los amigos que tienes agregados.
@@ -393,6 +401,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     minWidth: 120,
     marginHorizontal: 5,
+    marginTop: 10,
   },
   botonSecundarioTexto: {
     color: '#6200EE',

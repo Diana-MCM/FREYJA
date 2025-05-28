@@ -244,12 +244,12 @@ const handleSave = () => {
     </View>
   );
 
-  const dateObj = new Date(selectedDate);
-  const formattedDate = selectedDate ? dateObj.toLocaleDateString('es-ES', { 
+ const formattedDate = selectedDate ? 
+  selectedDate.toLocaleDateString('es-ES', { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
-    day: 'numeric' 
+    day: 'numeric'
   }) : '';
 
   return (

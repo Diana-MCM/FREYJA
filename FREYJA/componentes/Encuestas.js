@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 const Encuestas = ({ setScreen, nombreUsuario, userId }) => {

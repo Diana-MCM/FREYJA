@@ -234,6 +234,7 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
           >
             Volver al inicio
           </Button>
+          
 
           <Text style={styles.notaImportante}>
             Recuerda que estas preferencias pueden evolucionar con el tiempo y siempre puedes actualizarlas.
@@ -441,9 +442,16 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
           style={styles.botonSecundario}
           labelStyle={styles.botonSecundarioTexto}
         >
-          Cancelar
+          Volver al inicio
         </Button>
-
+         <Button 
+                                   mode="outlined" 
+                                   onPress={() => setScreen('Encuestas')}
+                                   style={styles.botonSecundario}
+                                   labelStyle={styles.botonSecundarioTexto}
+                                 >
+                                   Cancelar
+                                 </Button>
         <Text style={styles.notaPrivacidad}>
           Tus respuestas son completamente confidenciales y solo serán compartidas con quienes tú decidas.
         </Text>
