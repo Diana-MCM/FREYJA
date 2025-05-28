@@ -388,7 +388,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2c3e50',
     textAlign: 'center',
-    marginBottom: 8
+    marginBottom: 8,
+    marginTop: 20,
   },
   subtitulo: {
     fontSize: 16,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator, Alert} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
 import { Checkbox, RadioButton, Button } from 'react-native-paper';
 import { getDatabase, ref, push, set } from 'firebase/database';
 
@@ -21,6 +21,7 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
 
   const [mostrarResultado, setMostrarResultado] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [camposIncompletos, setCamposIncompletos] = useState(false);
 
   // Opciones para cada pregunta
   const opcionesIntereses = [
@@ -68,16 +69,32 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
 
   const opcionesContexto = [
     { value: 'romantico', label: 'Romántico (ej: ataduras con velas y música)' },
-    { value: 'sexual', label: 'Sexual (ej: juego rápido y intenso)' },
+    { value: 'sexual', label: 'Sexual (ej: juego rápido e intenso)' },
     { value: 'ambos', label: 'Ambos, depende del día' },
     { value: 'otro_contexto', label: 'Otro' }
   ];
 
-  // Guardar en Firebase
+  // Guardar en Firebase con validación
   const guardarEncuesta = async () => {
     try {
       setLoading(true);
-      
+      setCamposIncompletos(false);
+
+      // Validar campos obligatorios
+      const camposObligatorios = [
+        respuestas.experienciaFetiches,
+        respuestas.limitesFetiches,
+        respuestas.comodidadHablando,
+        respuestas.palabraSeguridad,
+        respuestas.contextoExploracion
+      ];
+
+      if (camposObligatorios.some(campo => !campo)) {
+        setCamposIncompletos(true);
+        Alert.alert('Campos incompletos', 'Por favor, completa todas las preguntas obligatorias antes de guardar.');
+        return;
+      }
+
       if (!userId) {
         Alert.alert('Error', 'Usuario no identificado');
         return;
@@ -85,16 +102,16 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
 
       const db = getDatabase();
       const encuestaRef = push(ref(db, `usuarios/${userId}/interesesSexuales`));
-      
+
       await set(encuestaRef, {
-       respuestas: { ...respuestas },
-       fecha: new Date().toISOString()
-    });
+        respuestas: { ...respuestas },
+        fecha: new Date().toISOString()
+      });
 
       setMostrarResultado(true);
     } catch (error) {
       console.error('Error al guardar:', error);
-      Alert.alert('Error', 'No se pudo guardar la encuesta');
+      Alert.alert('Error', 'No se pudo guardar la encuesta. Verifica tu conexión o permisos.');
     } finally {
       setLoading(false);
     }
@@ -106,7 +123,7 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
     const newValue = current.includes(value)
       ? current.filter(v => v !== value)
       : [...current, value];
-    
+
     setRespuestas({
       ...respuestas,
       intereses: newValue
@@ -130,20 +147,20 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
   // Pantalla de carga
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#8A2BE2" />
         <Text style={styles.loadingText}>Guardando tus respuestas...</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // Pantalla de resultados
   if (mostrarResultado) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Text style={styles.titulo}>Tus Preferencias de Fetiches</Text>
-          
+
           {/* Intereses */}
           <View style={styles.respuestaContainer}>
             <Text style={styles.preguntaResumen}>Fantasías o fetiches que te generan curiosidad:</Text>
@@ -234,19 +251,18 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
           >
             Volver al inicio
           </Button>
-          
 
           <Text style={styles.notaImportante}>
             Recuerda que estas preferencias pueden evolucionar con el tiempo y siempre puedes actualizarlas.
           </Text>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // Formulario principal
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.titulo}>Exploración de Fetiches y Preferencias</Text>
         <Text style={styles.subtitulo}>
@@ -282,9 +298,7 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
             />
           )}
 
-          <Text style={[styles.pregunta, { marginTop: 20 }]}>
-            ¿Alguna vez has experimentado con algún fetiche?
-          </Text>
+          <Text style={[styles.pregunta, { marginTop: 20, fontWeight: 'bold' }]}>* ¿Alguna vez has experimentado con algún fetiche?</Text>
           
           {opcionesExperiencia.map(opcion => (
             <View key={opcion.value} style={styles.opcionContainer}>
@@ -303,9 +317,7 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
         <View style={styles.seccion}>
           <Text style={styles.seccionTitulo}>🔹 2. Sobre Límites y Comodidad</Text>
           
-          <Text style={styles.pregunta}>
-            ¿Hay algún fetiche o práctica que NO estarías dispuesto/a a probar? (Ej: dolor, humillación, etc.)
-          </Text>
+          <Text style={[styles.pregunta, { fontWeight: 'bold' }]}>* ¿Hay algún fetiche o práctica que NO estarías dispuesto/a a probar? (Ej: dolor, humillación, etc.)</Text>
           
           {opcionesLimites.map(opcion => (
             <View key={opcion.value} style={styles.opcionContainer}>
@@ -329,9 +341,7 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
             />
           )}
 
-          <Text style={[styles.pregunta, { marginTop: 20 }]}>
-            ¿Cómo te sientes al hablar de estos temas?
-          </Text>
+          <Text style={[styles.pregunta, { marginTop: 20, fontWeight: 'bold' }]}>* ¿Cómo te sientes al hablar de estos temas?</Text>
           
           {opcionesComodidad.map(opcion => (
             <View key={opcion.value} style={styles.opcionContainer}>
@@ -371,9 +381,7 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
             </View>
           ))}
 
-          <Text style={[styles.pregunta, { marginTop: 20 }]}>
-            ¿Te gustaría establecer un "código" o palabra segura para detener la actividad si es necesario?
-          </Text>
+          <Text style={[styles.pregunta, { marginTop: 20, fontWeight: 'bold' }]}>* ¿Te gustaría establecer un "código" o palabra segura para detener la actividad si es necesario?</Text>
           
           {opcionesPalabraSeguridad.map(opcion => (
             <View key={opcion.value} style={styles.opcionContainer}>
@@ -396,9 +404,7 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
             />
           )}
 
-          <Text style={[styles.pregunta, { marginTop: 20 }]}>
-            ¿Prefieres explorar fetiches en un contexto romántico o solo sexual?
-          </Text>
+          <Text style={[styles.pregunta, { marginTop: 20, fontWeight: 'bold' }]}>* ¿Prefieres explorar fetiches en un contexto romántico o solo sexual?</Text>
           
           {opcionesContexto.map(opcion => (
             <View key={opcion.value} style={styles.opcionContainer}>
@@ -444,19 +450,24 @@ const EncuestaFetiches = ({ setScreen, userId }) => {
         >
           Volver al inicio
         </Button>
-         <Button 
-                                   mode="outlined" 
-                                   onPress={() => setScreen('Encuestas')}
-                                   style={styles.botonSecundario}
-                                   labelStyle={styles.botonSecundarioTexto}
-                                 >
-                                   Cancelar
-                                 </Button>
+        <Button 
+          mode="outlined" 
+          onPress={() => setScreen('Encuestas')}
+          style={styles.botonSecundario}
+          labelStyle={styles.botonSecundarioTexto}
+        >
+          Cancelar
+        </Button>
         <Text style={styles.notaPrivacidad}>
           Tus respuestas son completamente confidenciales y solo serán compartidas con quienes tú decidas.
         </Text>
+        {camposIncompletos && (
+          <Text style={styles.errorText}>
+            Por favor, completa todas las preguntas marcadas con (*) antes de guardar.
+          </Text>
+        )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -486,7 +497,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#4B0082',
     textAlign: 'center',
-    marginBottom: 8
+    marginBottom: 8,
   },
   subtitulo: {
     fontSize: 16,
@@ -509,7 +520,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#8A2BE2',
-    marginBottom: 16
+    marginBottom: 16,
+    marginTop: 20,
   },
   pregunta: {
     fontSize: 16,
@@ -594,6 +606,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     fontStyle: 'italic'
+  },
+  errorText: {
+    fontSize: 14,
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 10
   }
 });
 

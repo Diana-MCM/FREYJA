@@ -224,7 +224,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     color: '#333',
-    textAlign: 'center'
+    textAlign: 'center',
+    marginTop: 20,
   },
   cargando: {
     textAlign: 'center',

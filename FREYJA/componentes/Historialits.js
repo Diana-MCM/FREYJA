@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TextInput, TouchableOpacity } from 'react-native';
 import { RadioButton, Checkbox, Button } from 'react-native-paper';
 import { getDatabase, ref, push, set } from 'firebase/database';
 
@@ -216,14 +216,20 @@ const EncuestaHistorialITS = ({ setScreen, userId }) => {
             {preguntaActual.id === 'itsDiagnosticadas' ? (
               <>
                 {preguntaActual.opciones.map((opcion) => (
-                  <View key={opcion.value} style={styles.opcionContainer}>
-                    <Checkbox.Android
-                      status={respuestas.itsDiagnosticadas.includes(opcion.value) ? 'checked' : 'unchecked'}
-                      onPress={() => handleCheckboxChange(opcion.value)}
-                      color="#3498db"
-                    />
+                  <TouchableOpacity
+                    key={opcion.value}
+                    style={styles.opcionContainer}
+                    onPress={() => handleCheckboxChange(opcion.value)}
+                  >
+                    <View style={[styles.casilla, respuestas.itsDiagnosticadas.includes(opcion.value) && styles.casillaSeleccionada]}>
+                      <Checkbox.Android
+                        status={respuestas.itsDiagnosticadas.includes(opcion.value) ? 'checked' : 'unchecked'}
+                        onPress={() => handleCheckboxChange(opcion.value)}
+                        color="#000000"
+                      />
+                    </View>
                     <Text style={styles.opcionTexto}>{opcion.label}</Text>
-                  </View>
+                  </TouchableOpacity>
                 ))}
                 {respuestas.itsDiagnosticadas.includes('otra') && (
                   <TextInput
@@ -235,17 +241,25 @@ const EncuestaHistorialITS = ({ setScreen, userId }) => {
                 )}
               </>
             ) : (
-              <RadioButton.Group
-                onValueChange={(value) => handleChange(preguntaActual.id, value)}
-                value={respuestas[preguntaActual.id]}
-              >
+              <>
                 {preguntaActual.opciones.map((opcion) => (
-                  <View key={opcion.value} style={styles.opcionContainer}>
-                    <RadioButton value={opcion.value} color="#3498db" />
+                  <TouchableOpacity
+                    key={opcion.value}
+                    style={styles.opcionContainer}
+                    onPress={() => handleChange(preguntaActual.id, opcion.value)}
+                  >
+                    <View style={[styles.casilla, respuestas[preguntaActual.id] === opcion.value && styles.casillaSeleccionada]}>
+                      <RadioButton
+                        value={opcion.value}
+                        status={respuestas[preguntaActual.id] === opcion.value ? 'checked' : 'unchecked'}
+                        onPress={() => handleChange(preguntaActual.id, opcion.value)}
+                        color="#000000"
+                      />
+                    </View>
                     <Text style={styles.opcionTexto}>{opcion.label}</Text>
-                  </View>
+                  </TouchableOpacity>
                 ))}
-              </RadioButton.Group>
+              </>
             )}
           </View>
         )}
@@ -292,13 +306,13 @@ const EncuestaHistorialITS = ({ setScreen, userId }) => {
           Volver al inicio
         </Button>
         <Button 
-                           mode="outlined" 
-                           onPress={() => setScreen('Encuestas')}
-                           style={styles.botonSecundario}
-                           labelStyle={styles.botonSecundarioTexto}
-                         >
-                           Cancelar
-                         </Button>
+          mode="outlined" 
+          onPress={() => setScreen('Encuestas')}
+          style={styles.botonSecundario}
+          labelStyle={styles.botonSecundarioTexto}
+        >
+          Cancelar
+        </Button>
         
         <Text style={styles.notaPrivacidad}>
           Esta información es confidencial y solo será compartida con los amigos que tienes agregados.
@@ -331,7 +345,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2c3e50',
     textAlign: 'center',
-    marginBottom: 20
+    marginBottom: 20,
+    marginTop: 20,
   },
   subtitulo: {
     fontSize: 16,
@@ -365,7 +380,22 @@ const styles = StyleSheet.create({
   opcionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  casilla: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: '#000000', // Cambiado a negro
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  casillaSeleccionada: {
+    backgroundColor: '#000000', // Cambiado a negro
   },
   opcionTexto: {
     fontSize: 16,

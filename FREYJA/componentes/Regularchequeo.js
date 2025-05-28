@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, SafeAreaView, TouchableOpacity } from 'react-native';
 import { RadioButton, Button } from 'react-native-paper';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { app } from '../firebase/firebase'; // Ajusta la ruta según tu proyecto
@@ -37,7 +37,7 @@ const EncuestaChequeoETS = ({ onSubmit, setScreen, userId }) => {
     },
     {
       id: 'proteccion',
-      pregunta: '3. ¿Has protección (preservativo) en tus relaciones sexuales en los ultimos 6 meses?',
+      pregunta: '3. ¿Has usado protección (preservativo) en tus relaciones sexuales en los últimos 6 meses?',
       opciones: [
         { value: 'siempre', label: 'Siempre' },
         { value: 'a_veces', label: 'A veces' },
@@ -54,7 +54,7 @@ const EncuestaChequeoETS = ({ onSubmit, setScreen, userId }) => {
     },
     {
       id: 'historialETS',
-      pregunta: '5. ¿Te han diagnosticado alguna ETS en los ultimos 6 meses?',
+      pregunta: '5. ¿Te han diagnosticado alguna ETS en los últimos 6 meses?',
       opciones: [
         { value: 'si', label: 'Sí' },
         { value: 'no', label: 'No' },
@@ -72,36 +72,36 @@ const EncuestaChequeoETS = ({ onSubmit, setScreen, userId }) => {
     }
   ];
 
-const guardarEncuestaEnFirebase = async (resultado) => {
-  try {
-    setLoading(true);
+  const guardarEncuestaEnFirebase = async (resultado) => {
+    try {
+      setLoading(true);
 
-    if (!userId) {
-      Alert.alert('Error', 'No se encontró el usuario. Por favor, inicia sesión de nuevo.');
+      if (!userId) {
+        Alert.alert('Error', 'No se encontró el usuario. Por favor, inicia sesión de nuevo.');
+        setLoading(false);
+        return;
+      }
+
+      const encuestaData = {
+        userId,
+        respuestas,
+        puntaje: resultado.puntaje,
+        nivelRiesgo: resultado.recomendacion.nivel,
+        fecha: new Date().toISOString(),
+      };
+
+      const db = getDatabase(app);
+      const newEncuestaRef = push(ref(db, `usuarios/${userId}/chequeos`));
+      await set(newEncuestaRef, encuestaData);
+
+      console.log('Encuesta guardada en Firebase Realtime Database');
+    } catch (error) {
+      console.error('Error al guardar la encuesta:', error);
+      Alert.alert('Error', 'No se pudo guardar la encuesta. Inténtalo de nuevo.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const encuestaData = {
-      userId,
-      respuestas,
-      puntaje: resultado.puntaje,
-      nivelRiesgo: resultado.recomendacion.nivel,
-      fecha: new Date().toISOString(),
-    };
-
-    const db = getDatabase(app);
-    const newEncuestaRef = push(ref(db, `usuarios/${userId}/chequeos`));
-    await set(newEncuestaRef, encuestaData);
-
-    console.log('Encuesta guardada en Firebase Realtime Database');
-  } catch (error) {
-    console.error('Error al guardar la encuesta:', error);
-    Alert.alert('Error', 'No se pudo guardar la encuesta. Inténtalo de nuevo.');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleChange = (pregunta, value) => {
     setRespuestas({
@@ -178,10 +178,10 @@ const guardarEncuestaEnFirebase = async (resultado) => {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
+      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color="#6200EE" />
         <Text style={styles.loadingText}>Guardando tus respuestas...</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -190,7 +190,7 @@ const guardarEncuestaEnFirebase = async (resultado) => {
     const { nivel, mensaje, color } = obtenerRecomendacion(puntaje);
     
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Text style={styles.titulo}>Resultado de tu evaluación</Text>
           
@@ -231,12 +231,12 @@ const guardarEncuestaEnFirebase = async (resultado) => {
             NOTA: Esta evaluación no sustituye un diagnóstico médico. Si tienes dudas o síntomas, consulta a un profesional de salud.
           </Text>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.titulo}>Evaluación de Riesgo de ETS</Text>
         <Text style={styles.subtitulo}>Pregunta {pasoActual} de {preguntas.length}</Text>
@@ -244,78 +244,80 @@ const guardarEncuestaEnFirebase = async (resultado) => {
         <View style={styles.preguntaContainer}>
           <Text style={styles.preguntaTexto}>{preguntas[pasoActual - 1].pregunta}</Text>
           
-          <RadioButton.Group
-            onValueChange={(value) => handleChange(preguntas[pasoActual - 1].id, value)}
-            value={respuestas[preguntas[pasoActual - 1].id]}
-          >
-            {preguntas[pasoActual - 1].opciones.map((opcion) => (
-              <View key={opcion.value} style={styles.opcionContainer}>
-                <RadioButton value={opcion.value} color="#3498db" />
-                <Text style={styles.opcionTexto}>{opcion.label}</Text>
+          {preguntas[pasoActual - 1].opciones.map((opcion) => (
+            <TouchableOpacity
+              key={opcion.value}
+              style={styles.opcionContainer}
+              onPress={() => handleChange(preguntas[pasoActual - 1].id, opcion.value)}
+            >
+              <View style={[styles.casilla, respuestas[preguntas[pasoActual - 1].id] === opcion.value && styles.casillaSeleccionada]}>
+                <RadioButton
+                  value={opcion.value}
+                  status={respuestas[preguntas[pasoActual - 1].id] === opcion.value ? 'checked' : 'unchecked'}
+                  color="#000000" // Cambiado a negro
+                  onPress={() => handleChange(preguntas[pasoActual - 1].id, opcion.value)}
+                />
               </View>
-            ))}
-          </RadioButton.Group>
+              <Text style={styles.opcionTexto}>{opcion.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
         
-        <View
-          style={[styles.botonesNavegacion,{ justifyContent: pasoActual > 1 ? 'space-between' : 'flex-end' }]}
-          >
-           {pasoActual > 1 && (
-             <Button 
-               mode="outlined" 
-               onPress={pasoAnterior}
-               style={styles.botonSecundario}
-               labelStyle={styles.botonSecundarioTexto}
-             >
+        <View style={[styles.botonesNavegacion, { justifyContent: pasoActual > 1 ? 'space-between' : 'flex-end' }]}>
+          {pasoActual > 1 && (
+            <Button 
+              mode="outlined" 
+              onPress={pasoAnterior}
+              style={styles.botonSecundario}
+              labelStyle={styles.botonSecundarioTexto}
+            >
               Anterior
-             </Button>
+            </Button>
           )}
-  
-           {pasoActual < preguntas.length ? (
-            <>
-             <Button 
-               mode="contained" 
-               onPress={siguientePaso}
-               style={styles.boton}
-               labelStyle={styles.botonTexto}
-             >
-              Siguiente
-             </Button>
-            </>
-           ) : (
-             <Button 
-              mode="contained" 
-               onPress={handleSubmit}
-               style={styles.boton}
-               labelStyle={styles.botonTexto}
-             >
-              Ver resultados
-             </Button>
-           )}
-         </View>
-         <View style={{ height: 12 }} />
-         <Button
-                mode="outlined"
-                onPress={() => setScreen('Inicio')}
-                style={styles.botonSecundario}
-                labelStyle={styles.botonSecundarioTexto}
-         >
-          Volver al inicio
-         </Button>
 
-         <Button 
-                   mode="outlined" 
-                   onPress={() => setScreen('Encuestas')}
-                   style={styles.botonSecundario}
-                   labelStyle={styles.botonSecundarioTexto}
-                 >
-                   Cancelar
-                 </Button>
+          {pasoActual < preguntas.length ? (
+            <Button 
+              mode="contained" 
+              onPress={siguientePaso}
+              style={styles.boton}
+              labelStyle={styles.botonTexto}
+            >
+              Siguiente
+            </Button>
+          ) : (
+            <Button 
+              mode="contained" 
+              onPress={handleSubmit}
+              style={styles.boton}
+              labelStyle={styles.botonTexto}
+            >
+              Ver resultados
+            </Button>
+          )}
+        </View>
+        <View style={{ height: 12 }} />
+        <Button
+          mode="outlined"
+          onPress={() => setScreen('Inicio')}
+          style={styles.botonSecundario}
+          labelStyle={styles.botonSecundarioTexto}
+        >
+          Volver al inicio
+        </Button>
+
+        <Button 
+          mode="outlined" 
+          onPress={() => setScreen('Encuestas')}
+          style={styles.botonSecundario}
+          labelStyle={styles.botonSecundarioTexto}
+        >
+          Cancelar
+        </Button>
         <Text style={styles.notaPrivacidad}>
           Estas respuestas las podrán ver tus amigos.
         </Text>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -370,7 +372,22 @@ const styles = StyleSheet.create({
   opcionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  casilla: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: '#000000', // Cambiado a negro
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  casillaSeleccionada: {
+    backgroundColor: '#000000', // Cambiado a negro
   },
   opcionTexto: {
     fontSize: 16,
@@ -398,7 +415,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     minWidth: 120,
     marginHorizontal: 5,
-     marginTop: 10,
+    marginTop: 10,
   },
   botonSecundarioTexto: {
     color: '#6200EE',

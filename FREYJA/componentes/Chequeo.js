@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Button, Modal, TouchableOpacity } from 'react-native';
 import { getDatabase, ref, onValue, off } from 'firebase/database';
 import { app } from '../firebase/firebase';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const db = getDatabase(app);
 
@@ -122,11 +123,13 @@ const HistorialChequeos = ({ userId, setScreen }) => {
         )}
       </ScrollView>
 
-      <Button
-        title="Volver al Inicio"
+      <TouchableOpacity 
+        style={styles.backButton}
         onPress={() => setScreen('Inicio')}
-        color="#757575"
-      />
+      >
+        <MaterialIcons name="arrow-back" size={20} color="white" />
+        <Text style={styles.backButtonText}>Volver al Inicio</Text>
+      </TouchableOpacity>
 
       {/* Modal para mostrar detalles */}
       <Modal
@@ -224,7 +227,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     color: '#2c3e50',
-    textAlign: 'center'
+    textAlign: 'center',
+    marginTop: 20
   },
   sinResultados: {
     textAlign: 'center',
@@ -318,6 +322,26 @@ const styles = StyleSheet.create({
   },
   modalFooter: {
     marginTop: 10
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6200EE',
+    padding: 15,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  backButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
   }
 });
 
